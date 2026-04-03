@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Geode.App/Geode.App.csproj" />
+  <Project Path="Geode.Core/Geode.Core.csproj" />
+  <Project Path="Geode.Rendering/Geode.Rendering.csproj" />
+  <Project Path="Geode.Visualization/Geode.Visualization.csproj" />
+</Solution>

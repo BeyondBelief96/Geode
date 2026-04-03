@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>Geode.Core</PackageId>
+    <Description>Double-precision geodetic math for virtual globe engines. Includes WGS84 ellipsoid, coordinate transforms, surface normals, ray intersection, and curve computation. No GPU dependencies.</Description>
+  </PropertyGroup>
+
+</Project>

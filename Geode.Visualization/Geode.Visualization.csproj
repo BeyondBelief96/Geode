@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>Geode.Visualization</PackageId>
+    <Description>High-level geographic visualization for Geode globe engine. Globe tessellation, camera, Phong shading, and texture mapping on WGS84 ellipsoids.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Geode.Core\Geode.Core.csproj" />
+    <ProjectReference Include="..\Geode.Rendering\Geode.Rendering.csproj" />
+  </ItemGroup>
+
+</Project>
