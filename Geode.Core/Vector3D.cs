@@ -54,6 +54,15 @@ namespace Geode.Core
             return Math.Acos(dot / mags);
         }
 
+        public Vector3D RotateAroundAxis(Vector3D axis, double angle)
+        {
+            // Rodrigues' rotation formula
+            Vector3D k = axis.Normalize();
+            double cosTheta = Math.Cos(angle);
+            double sinTheta = Math.Sin(angle);
+            return this * cosTheta + k.Cross(this) * sinTheta + k * (k.Dot(this) * (1 - cosTheta));
+        }
+
         #region Operators
 
         public static Vector3D operator +(Vector3D a, Vector3D b) => new(a.X + b.X, a.Y + b.Y, a.Z + b.Z);

@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet test:*)",
+      "Bash(curl -s \"https://api.github.com/repos/virtualglobebook/OpenGlobe/contents/\")",
+      "Bash(python3 -c \"import sys,json; [print\\(f'{x[\\\\\"type\\\\\"]:10s} {x[\\\\\"name\\\\\"]}'\\) for x in json.loads\\(sys.stdin.read\\(\\)\\)]\")",
+      "Bash(gh api:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Read(//c/Users/brand/OneDrive/Desktop/textbooks//**)",
+      "Read(//c/Users/brand/OneDrive/Desktop//**)",
+      "Bash(ls /c/Users/brand/source/repos/Geode/GUIDE-*.md)",
+      "Read(//c/Users/brand/Desktop/**)",
+      "Read(//c/Users/brand/**)",
+      "Bash(cmd.exe:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(python restructure.py)",
+      "Bash(python reorder_part3.py)",
+      "WebFetch(domain:github.com)",
+      "Bash(wc:*)",
+      "Bash(dotnet build:*)",
+      "Bash(python gen_remaining.py)",
+      "Bash(rm gen_remaining.py)"
+    ]
+  }
+}
