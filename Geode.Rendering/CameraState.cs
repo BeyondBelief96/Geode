@@ -59,5 +59,21 @@ namespace Geode.Rendering
         /// <see cref="NearPlane"/>. Default: 1000.0.
         /// </summary>
         public double FarPlane { get; set; } = 1000.0;
+
+        /// <summary>
+        /// Returns the camera's geodetic altitude above the given ellipsoid's
+        /// surface, in meters. Positive when the eye is above the surface,
+        /// negative when below (e.g., camera buried inside the planet).
+        /// </summary>
+        /// <remarks>
+        /// Internally this calls <see cref="Ellipsoid.ToGeodetic3D"/>, which
+        /// runs a Newton-Raphson iteration to project the eye onto the
+        /// ellipsoid surface. For WGS84 / Earth this typically converges in
+        /// 1-2 iterations, so the cost is small. Consumers that call this
+        /// many times per frame (LOD metrics, several shader uniforms) may
+        /// want to cache the result.
+        /// </remarks>
+        /// <param name="ellipsoid">The reference ellipsoid (typically <see cref="Ellipsoid.Wgs84"/>).</param>
+        public double Height(Ellipsoid ellipsoid) => ellipsoid.ToGeodetic3D(Eye).Height;
     }
 }

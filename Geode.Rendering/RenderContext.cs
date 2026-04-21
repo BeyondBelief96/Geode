@@ -1,6 +1,6 @@
-﻿using Silk.NET.OpenGL;
+﻿using Geode.Rendering.Shaders;
+using Silk.NET.OpenGL;
 using System;
-using System.Numerics;
 
 namespace Geode.Rendering
 {
@@ -8,6 +8,14 @@ namespace Geode.Rendering
     {
         private readonly GL _gl;
         private RenderState _shadowState;
+
+        /// <summary>
+        /// Process-wide cache of compiled shader programs keyed by application-chosen
+        /// strings. Owns every program it hands out -- callers Release when done,
+        /// and Dispose(this) disposes any still-cached programs.
+        /// See <see cref="Shaders.ShaderCache"/> for the model and Book Section 3.4.6.
+        /// </summary>
+        public ShaderCache Shaders { get; }
 
         public RenderContext(GL gl)
         {
@@ -17,9 +25,24 @@ namespace Geode.Rendering
             _gl.Enable(EnableCap.DebugOutputSynchronous);
             _gl.DebugMessageCallback(DebugCallback, IntPtr.Zero);
 
+            // Reversed-Z: NDC z in [0, 1] rather than [-1, 1].
+            // Pairs with a near -> 1.0 / far -> 0.0 depth convention for
+            // planetary-scale depth precision (see Book Chapter 6).
             _gl.ClipControl(ClipControlOrigin.LowerLeft, ClipControlDepth.ZeroToOne);
 
+            // Seed the shadow with our preferred defaults (DepthTest/FacetCulling
+            // enabled, etc. -- these differ from the GL defaults). The shadow
+            // does NOT match actual GL state yet; ForceApplyRenderState below
+            // pushes every field to GL so shadow and GL are in sync from the
+            // first draw onward. Without this push, the first ApplyDepthTest
+            // would see shadow.Enabled == desired.Enabled == true and skip the
+            // glEnable, leaving the depth test actually disabled.
             _shadowState = new RenderState();
+            ForceApplyRenderState(_shadowState);
+
+            // ShaderCache is a context-owned resource: it holds GL program handles,
+            // which are only valid for this context's lifetime. Dispose(this) tears it down.
+            Shaders = new ShaderCache(_gl);
         }
 
         /// <summary>
@@ -92,20 +115,60 @@ namespace Geode.Rendering
             _gl.DepthMask(_shadowState.DepthMask.Enabled);
         }
 
-        #region Set Common Scene Uniforms
-
-        private static float[] Matrix4x4ToArray(Matrix4x4 m)
+        /// <summary>
+        /// Issue an indexed draw call. This is the canonical draw path for geometry
+        /// that shares vertices between primitives (i.e., has an element buffer);
+        /// for non-indexed geometry (e.g., simple point or triangle strips built
+        /// from a flat vertex stream) use <see cref="DrawArrays"/>.
+        /// </summary>
+        /// <param name="primitiveType">Primitive topology -- triangles, lines, points, etc.</param>
+        /// <param name="drawState">Render state + shader program + vertex array to draw.</param>
+        /// <param name="sceneState">Camera and scene data consumed by automatic uniforms.</param>
+        /// <remarks>
+        /// The per-call sequence is:
+        /// <list type="number">
+        ///   <item>Apply render state (shadow-filtered).</item>
+        ///   <item>Bind the shader, which runs every draw-automatic uniform and
+        ///   flushes the program's dirty-uniform list.</item>
+        ///   <item>Bind the VAO.</item>
+        ///   <item>Issue <c>glDrawElements</c>.</item>
+        /// </list>
+        /// Index type is hard-coded to <c>GL_UNSIGNED_INT</c> because
+        /// <see cref="Buffers.VertexArrayObject"/> uses <c>uint[]</c> index buffers. If a
+        /// smaller index type is ever supported, branch here on the VAO's index type.
+        /// </remarks>
+        public unsafe void Draw(PrimitiveType primitiveType, DrawState drawState, SceneState sceneState)
         {
-            return new float[16]
-            {
-                m.M11, m.M12, m.M13, m.M14,
-                m.M21, m.M22, m.M23, m.M24,
-                m.M31, m.M32, m.M33, m.M34,
-                m.M41, m.M42, m.M43, m.M44
-            };
+            ApplyRenderState(drawState.RenderState);
+            drawState.ShaderProgram.Bind(this, drawState, sceneState);
+            _gl.BindVertexArray(drawState.VertexArrayObject.Handle);
+
+            // null indices pointer -- offset 0 into the bound element buffer,
+            // which is what we want for a simple "draw the whole VAO" call.
+            _gl.DrawElements(primitiveType,
+                (uint)drawState.VertexArrayObject.IndexCount,
+                DrawElementsType.UnsignedInt, (void*)0);
         }
 
-        #endregion
+        /// <summary>
+        /// Issue a non-indexed draw call (<c>glDrawArrays</c>). Used when the VAO has
+        /// no element buffer -- the GPU walks the vertex stream in order, consuming
+        /// primitives according to <paramref name="primitiveType"/>.
+        /// </summary>
+        /// <param name="primitiveType">Primitive topology.</param>
+        /// <param name="first">Starting vertex index in the bound vertex stream.</param>
+        /// <param name="count">Number of vertices to consume.</param>
+        /// <param name="drawState">Render state + shader program + vertex array to draw.</param>
+        /// <param name="sceneState">Camera and scene data consumed by automatic uniforms.</param>
+        public void DrawArrays(PrimitiveType primitiveType, int first, uint count,
+            DrawState drawState, SceneState sceneState)
+        {
+            ApplyRenderState(drawState.RenderState);
+            drawState.ShaderProgram.Bind(this, drawState, sceneState);
+            _gl.BindVertexArray(drawState.VertexArrayObject.Handle);
+
+            _gl.DrawArrays(primitiveType, first, count);
+        }
 
         #region Render State Application (with shadowing)
 
@@ -192,19 +255,16 @@ namespace Geode.Rendering
         private void ApplyDepthTest(DepthTest desired)
         {
             DepthTest shadow = _shadowState.DepthTest;
-            if(desired.Enabled != shadow.Enabled)
+            if (desired.Enabled != shadow.Enabled)
             {
                 if (desired.Enabled)
-                {
                     _gl.Enable(EnableCap.DepthTest);
-                }
                 else
-                {
                     _gl.Disable(EnableCap.DepthTest);
-                }
+                shadow.Enabled = desired.Enabled;
             }
 
-            if(desired.Function != shadow.Function)
+            if (desired.Function != shadow.Function)
             {
                 _gl.DepthFunc(ToGlDepthFunction(desired.Function));
                 shadow.Function = desired.Function;
@@ -391,9 +451,16 @@ namespace Geode.Rendering
 
         #endregion
 
+        /// <summary>
+        /// Dispose the render context and every GL resource it owns.
+        /// Currently that is just the <see cref="Shaders"/> cache; as more
+        /// context-owned resources are added (framebuffers, VAOs, etc.) they
+        /// dispose here in reverse creation order.
+        /// Must be called on the render thread.
+        /// </summary>
         public void Dispose()
         {
-            
+            Shaders.Dispose();
         }
     }
 }

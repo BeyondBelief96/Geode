@@ -67,6 +67,7 @@ The guide's sections track the textbook's section numbering. Book §X.Y is the b
 - [Section 17: Draw State](#section-17-draw-state) -- Book §3.3.4 -- `DrawState.cs`
 - [Section 18: Render Context](#section-18-render-context) -- Book §3.2 + §3.3.3 -- `RenderContext.cs`
 - [Section 19: The Automatic Uniform System](#section-19-the-automatic-uniform-system) -- Book §3.4.5 -- `IAutomaticUniform.cs`, `AutomaticUniforms.cs`, concrete uniform classes
+- [Section 19.25: The Shader Cache](#section-1925-the-shader-cache) -- Book §3.4.6 -- `ShaderCache.cs`
 - [Section 19.5: Framebuffers](#section-195-framebuffers) -- Book §3.7 -- `Framebuffer.cs`
 - [Section 20: Window, Context, Render Loop, and Drawing a Triangle](#section-20-window-context-render-loop-and-drawing-a-triangle) -- Book §3.8 -- `Program.cs`
 - [Section 20.5: Resources](#section-205-resources) -- Book §3.9
@@ -1666,7 +1667,7 @@ The book's Chapter 3 presents topics in this sequence:
 | §3.1 | The Need for a Renderer | §10 |
 | §3.2 | Bird's-Eye View (Device/Context) | §10, §18 |
 | §3.3 | State Management (RenderState, ClearState, DrawState, Context sync) | §15, §16, §17, §18 |
-| §3.4 | Shaders (compilation, vertex attributes, fragment outputs, uniforms, automatic uniforms) | §11, §19 |
+| §3.4 | Shaders (compilation, vertex attributes, fragment outputs, uniforms, automatic uniforms, shader cache) | §11, §19, §19.25 |
 | §3.5 | Vertex Data (buffers, index buffers, vertex arrays, layouts, meshes) | §12, §14 |
 | §3.6 | Textures (textures, samplers, texture units) | §13 |
 | §3.7 | Framebuffers | §19.5 |
@@ -1681,7 +1682,7 @@ If you are reading alongside the book, walk the guide in this logical order inst
 §8 (transform chain)  →  §9 (OpenGL primer)  →  §10 (renderer architecture)
   →  §15 (RenderState, ClearState)  →  §16 (CameraState, SceneState)
   →  §17 (DrawState)  →  §18 (RenderContext)
-  →  §11 (ShaderProgram)  →  §19 (Automatic uniforms)
+  →  §11 (ShaderProgram)  →  §19 (Automatic uniforms)  →  §19.25 (Shader cache)
   →  §12 (BufferObject, VertexAttrib, VAO)  →  §14 (Vertex data layouts)
   →  §13 (Texture2D)  →  §19.5 (Framebuffer)
   →  §20 (Triangle)  →  §20.5 (Resources)
@@ -1696,7 +1697,8 @@ Part III now matches the book's architecture on every major structure:
 - **Book §3.3 State Management.** `RenderState`, `ClearState`, `DrawState` match the book. Geode's `RenderContext` does shadow-state comparison before issuing GL state-change calls (§18). Every `ApplyXxx` helper compares against the shadow before calling GL, exactly as the book prescribes.
 - **Book §3.4.1-3 Shader compilation and fragment outputs.** `ShaderProgram` compiles, links, discovers active uniforms at link time via `glGetActiveUniform`, and populates a `FragmentOutputs` collection via `glGetFragDataLocation` (§11).
 - **Book §3.4.4 Uniforms.** Typed `Uniform` / `Uniform<T>` hierarchy, concrete `UniformFloatMatrix44GL` et al., named `UniformCollection` on `ShaderProgram`, dirty list + `Clean` flush via `glProgramUniform*` (§19).
-- **Book §3.4.5 Automatic Uniforms.** Full `LinkAutomaticUniform` + `DrawAutomaticUniformFactory` + `DrawAutomaticUniform` split, `AutomaticUniformFactoryCollection` registry, per-program automatic-uniform list populated at link time (§19). The `og_` naming convention is book-faithful.
+- **Book §3.4.5 Automatic Uniforms.** Full `LinkAutomaticUniform` + `DrawAutomaticUniformFactory` + `DrawAutomaticUniform` split, `AutomaticUniformFactoryCollection` registry, per-program automatic-uniform list populated at link time (§19). The `geode_` prefix is this guide's equivalent of the book's `og_` convention.
+- **Book §3.4.6 ShaderCache.** Reference-counted cache of compiled `ShaderProgram` instances, keyed by application-chosen strings, with thread-safe `Find` / `FindOrAdd` / `Release` semantics. Owned by `RenderContext`. Required for sort-by-state (once that lands) to use reference equality on the shader field (§19.25).
 - **Book §3.5 Vertex Data.** `BufferObject<T>`, `VertexAttrib`, `VertexArrayObject` with DSA (§12, §14).
 - **Book §3.6 Textures.** `Texture2D` with DSA, samplers, texture units (§13). `Texture2DDescription` carries format-renderability flags consumed by `Framebuffer` validation.
 - **Book §3.7 Framebuffers.** Indexable `ColorAttachments` collection, single `DepthAttachment` / `DepthStencilAttachment` slots, format validation at assignment time, delayed `glNamedFramebufferTexture` flushed on `Bind()`, named fragment-output routing via `shader.FragmentOutputs["name"]` (§19.5).
@@ -1710,8 +1712,7 @@ Reading the book in parallel, you will still encounter concepts the guide does n
 - **Book §3.3.1 failed-approach walkthrough.** The book walks through three incorrect approaches to state management (naive enable/disable, `glPushAttrib`/`glPopAttrib`, full-reset) before presenting the shadow-state design. The guide skips straight to the final design.
 - **Book §3.3.2 PrimitiveRestart and StencilTest.** Not in Geode's `RenderState` yet.
 - **Book §3.3.3 version-integer coarse-check.** Comparing a single integer before fine-grained state field comparison. A cheap optimization not yet implemented.
-- **Book §3.3.6 sort-by-state.** Sorting draws by shader → depth-test → blending before issuing them is the standard optimization for scenes with many objects.
-- **Book §3.4.6 ShaderCache.** Reference-counted cache so sort-by-shader works. Requires reference equality for identical shader sources.
+- **Book §3.3.6 sort-by-state.** Sorting draws by shader → depth-test → blending before issuing them is the standard optimization for scenes with many objects. The ShaderCache (§19.25) provides the reference-equality that sort-by-shader needs; sort-by-state itself is the remaining piece.
 - **Book §3.4.1 embedded shader resources.** OpenGlobe ships shaders as assembly-embedded resources (`EmbeddedResources.GetText(...)`). Geode reads them from disk. Cosmetic difference.
 - **Book §3.4.1 built-in constant preamble.** `og_pi`, `og_halfPi`, etc. injected as a shader-source preamble. Geode expects shaders to use GLSL's `radians(180.0)` instead.
 - **Book §3.6 PBOs and TextureRectangle.** Pixel Buffer Objects enable async texture uploads from disk. `TextureRectangle` supports unnormalized coordinates, used in Chapter 11 height-field ray casting.
@@ -5004,6 +5005,127 @@ const float og_e            = 2.71828182845904523536;
 ```
 
 Geode does not yet inject these. Shaders that need pi use `radians(180.0)` or declare a local constant. If you add preamble injection later, the hook is `ShaderProgram`'s constructor -- prepend to `vertexSource`/`fragmentSource` before `CompileShader`, preserving `#version 460 core` as the first non-comment line.
+
+---
+
+## Section 19.25: The Shader Cache
+
+*Corresponds to Book Chapter 3, Section 3.4.6*
+
+*OpenGlobe source: `Source/Renderer/ShaderCache.cs`*
+
+*File we build in this section:* `Geode.Rendering/Shaders/ShaderCache.cs`. Also modifies `RenderContext` to own one.
+
+### Why a shader cache exists
+
+A `ShaderCache` maps application-chosen string keys to compiled `ShaderProgram` instances, with a reference count per key. It does two jobs:
+
+1. **Deduplication of shader compilation.** A globe tile renderer with 1,000 tiles on screen wants one shared `ShaderProgram`, not 1,000 freshly compiled copies. The cache guarantees that the same key returns the same instance across the whole program.
+
+2. **Enabling sort-by-state (Book §3.3.6).** The sort-by-state optimization buckets draws by shader using *reference equality* on the `ShaderProgram` field in `DrawState`. Two draws "use the same shader" if and only if they hold a pointer to the same instance. That identity requires shared instances, which requires a cache. Without this, sort-by-shader degrades to "can't sort by shader at all."
+
+The book introduces ShaderCache right after automatic uniforms (§3.4.5) because everything from Chapter 4 onward assumes shared shaders. For Geode, we build it here so it's ready when Part IV lands.
+
+### API
+
+Three public operations plus lifecycle:
+
+```csharp
+public sealed class ShaderCache : IDisposable
+{
+    public ShaderCache(GL gl);
+
+    // Peek only -- returns null if not cached. Does NOT change reference counts.
+    // Useful for procedural-shader paths that want to skip source generation
+    // when the compiled result is already cached.
+    public ShaderProgram? Find(string key);
+
+    // Canonical lookup. Increments refcount whether hit or miss. On miss,
+    // compiles the given sources and caches under the key.
+    public ShaderProgram FindOrAdd(string key, string vertexSource, string fragmentSource);
+
+    // Deferred-source variant. Source delegates invoked only on a cache miss --
+    // prefer this when source generation is expensive (disk I/O, procedural).
+    public ShaderProgram FindOrAdd(string key, Func<string> vertexSource, Func<string> fragmentSource);
+
+    // Convenience: key derived from the two paths, files read lazily via the deferred overload.
+    public ShaderProgram FindOrAddFromFiles(string vertexPath, string fragmentPath);
+
+    // Decrement. At zero, the program is Disposed and removed. Safe no-op if key is absent.
+    public void Release(string key);
+
+    public int Count { get; }
+    public void Dispose();   // Disposes every remaining program.
+}
+```
+
+Ownership rule: the cache owns every `ShaderProgram` it hands out. Callers **do not** `Dispose` returned programs -- they call `Release(key)`. `RenderContext.Dispose` calls `ShaderCache.Dispose`, which disposes all still-cached programs.
+
+### Reference counting, in practice
+
+Every `FindOrAdd` increments. Every `Release` decrements. At zero, the cache removes the entry and disposes the program. The pattern at call sites:
+
+```csharp
+// Early in a globe tile's lifecycle:
+ShaderProgram tileShader = ctx.Shaders.FindOrAddFromFiles("Shaders/tile.vert", "Shaders/tile.frag");
+_drawState = new DrawState(tileShader, _tileVao);
+
+// When the tile is evicted from the scene:
+ctx.Shaders.Release("file:Shaders/tile.vert|Shaders/tile.frag");
+```
+
+For a process-lifetime shader (the globe surface program in a single-scene demo) you can simply skip the `Release` and let `RenderContext.Dispose` clean up at shutdown. The refcount will sit at 1 forever, which is fine. Ref counting matters when shaders have shorter lifetimes than the context -- tile LOD systems, scene-switching, hot-reload during development.
+
+### Thread safety
+
+The cache uses a single coarse-grained lock for all public operations, matching the book's design.
+
+- **Lookups** (`Find`, `Count`) are safe from any thread.
+- **`FindOrAdd` must be called on the render thread** when it takes the miss path, because `new ShaderProgram(...)` calls `glCreateShader` / `glLinkProgram`. A background tile-preparation thread that wants to know "is this shader compiled yet?" should call `Find` first; if null, marshal to the render thread before calling `FindOrAdd`.
+- **`Release` must be called on the render thread** because the last release triggers `glDeleteProgram`.
+
+Disposal of the program happens *outside* the lock in `Release` -- keeps the critical section as short as possible and avoids any risk of deadlock if the program's dispose ever reaches back into other locked subsystems later.
+
+### Why not file path as the key universally?
+
+`FindOrAddFromFiles` derives its key from the two file paths (e.g. `"file:Shaders/tile.vert|Shaders/tile.frag"`). That works for file-backed shaders. But for **procedurally-generated shaders** -- e.g., compiling a tessellation shader with different `#define` flags for each LOD level -- there is no file. The caller picks the key:
+
+```csharp
+string key = $"tile-shader/lod={lod},lit={lit}";
+ShaderProgram p = ctx.Shaders.FindOrAdd(key,
+    () => GenerateVertexSource(lod, lit),
+    () => GenerateFragmentSource(lod, lit));
+```
+
+The deferred overload means the expensive generation happens only on cache miss. Subsequent calls with the same `(lod, lit)` pair return the cached program for the cost of a dictionary lookup.
+
+### Integration with RenderContext
+
+`ShaderCache` is a context-owned resource -- it holds GL handles that are only valid for a particular context's lifetime. `RenderContext` exposes it as a `Shaders` property, constructs it in the constructor, and disposes it in `Dispose`. The unified lifetime means callers never need to pass a `ShaderCache` around explicitly -- they already have the `RenderContext`.
+
+```csharp
+// Inside RenderContext:
+public ShaderCache Shaders { get; }
+
+public RenderContext(GL gl)
+{
+    // ... existing ctor setup ...
+    Shaders = new ShaderCache(_gl);
+}
+
+public void Dispose()
+{
+    Shaders.Dispose();
+}
+```
+
+### When it doesn't matter yet
+
+Right now, with only the triangle demo shader, the cache is a formality -- a single `FindOrAdd` call replaces a single `new ShaderProgram` call, no sharing opportunity. It starts to carry weight at:
+
+- **§21 Tessellation** -- still only one shader, but calling through the cache means the triangle shader is auto-disposed on `RenderContext.Dispose` instead of the App having to remember to dispose it explicitly.
+- **§22+ tile rendering** -- the first real sharing. N tiles → one shared program. Measurable compile-time savings.
+- **Sort-by-state** -- whenever that lands, the shader field in the bucketing sort is already a shared reference, so no additional work is needed.
 
 ---
 

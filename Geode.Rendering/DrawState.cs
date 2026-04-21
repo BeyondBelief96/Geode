@@ -1,13 +1,11 @@
-// Geode.Rendering/DrawState.cs
-//
-// Bundles the three objects needed to issue a draw call:
-// the pipeline state, the shader program, and the vertex array.
+using Geode.Rendering.Buffers;
+using Geode.Rendering.Shaders;
 
 namespace Geode.Rendering
 {
     /// <summary>
-    /// Groups a <see cref="Rendering.RenderState"/>, <see cref="Rendering.ShaderProgram"/>,
-    /// and <see cref="Rendering.VertexArrayObject"/> into a single drawable unit.
+    /// Groups a <see cref="Rendering.RenderState"/>, <see cref="Shaders.ShaderProgram"/>,
+    /// and <see cref="Buffers.VertexArrayObject"/> into a single drawable unit.
     /// Pass this to the renderer to execute a draw call with the correct state.
     /// </summary>
     public class DrawState

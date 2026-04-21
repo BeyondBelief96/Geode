@@ -9,7 +9,7 @@
 using Silk.NET.OpenGL;
 using System;
 
-namespace Geode.Rendering
+namespace Geode.Rendering.Buffers
 {
     /// <summary>
     /// A Vertex Array Object that owns a VBO and EBO and describes the vertex layout.
