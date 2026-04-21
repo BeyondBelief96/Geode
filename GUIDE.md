@@ -41,51 +41,57 @@ The book targets OpenGL 3.3 Core Profile. Geode targets **OpenGL 4.6 Core Profil
 
 ## Table of Contents
 
+The guide's sections track the textbook's section numbering. Book §X.Y is the book's section X.Y; Geode §N is this guide's section N. Where the guide adds material not in the book (OpenGL fundamentals, GLSL reference), the section is marked *scaffold*.
+
 ### Part I -- Introduction (Book Chapter 1)
-- [Section 1: Rendering Challenges in Virtual Globes](#section-1-rendering-challenges-in-virtual-globes)
-- [Section 2: Project Architecture](#section-2-project-architecture)
+- [Section 1: Rendering Challenges in Virtual Globes](#section-1-rendering-challenges-in-virtual-globes) -- Book §1.1
+- [Section 2: Project Architecture](#section-2-project-architecture) -- Book §1.3 + §1.4
 
 ### Part II -- Math Foundations (Book Chapter 2)
-- [Section 3: Virtual Globe Coordinate Systems](#section-3-virtual-globe-coordinate-systems)
-- [Section 4: Core Math Types](#section-4-core-math-types) -- `Trigonometry.cs`, `Constants.cs`, `Vector3D.cs`, `Geodetic2D.cs`, `Geodetic3D.cs`
-- [Section 5: The Ellipsoid Class](#section-5-the-ellipsoid-class) -- `Ellipsoid.cs`
-- [Section 6: Coordinate Transformations](#section-6-coordinate-transformations)
-- [Section 7: Curves on an Ellipsoid](#section-7-curves-on-an-ellipsoid)
+- [Section 3: Virtual Globe Coordinate Systems](#section-3-virtual-globe-coordinate-systems) -- Book §2.1
+- [Section 4: Core Math Types](#section-4-core-math-types) -- Book §2.1 / §2.2 -- `Trigonometry.cs`, `Constants.cs`, `Vector3D.cs`, `Geodetic2D.cs`, `Geodetic3D.cs`
+- [Section 5: The Ellipsoid Class](#section-5-the-ellipsoid-class) -- Book §2.2 -- `Ellipsoid.cs`
+- [Section 6: Coordinate Transformations](#section-6-coordinate-transformations) -- Book §2.3
+- [Section 7: Curves on an Ellipsoid](#section-7-curves-on-an-ellipsoid) -- Book §2.4
 
 ### Part III -- Renderer Design (Book Chapter 3)
-- [Section 8: Coordinate Spaces and Transform Chain](#section-8-coordinate-spaces-and-transform-chain)
-- [Section 9: OpenGL Fundamentals](#section-9-opengl-fundamentals)
-- [Section 10: Renderer Architecture Deep Dive](#section-10-renderer-architecture-deep-dive)
-- [Section 11: The Shader Pipeline](#section-11-the-shader-pipeline) -- `ShaderProgram.cs`
-- [Section 12: Vertex Buffers](#section-12-vertex-buffers) -- `BufferObject.cs`, `VertexAttrib.cs`, `VertexArrayObject.cs`
-- [Section 13: Textures](#section-13-textures) -- `Texture2D.cs`
-- [Section 14: Vertex Data Layouts](#section-14-vertex-data-layouts)
-- [Section 15: Renderer State Objects](#section-15-renderer-state-objects) -- `RenderState.cs`, `ClearState.cs`
-- [Section 16: Camera and Scene State](#section-16-camera-and-scene-state) -- `CameraState.cs`, `SceneState.cs`
-- [Section 17: Draw State](#section-17-draw-state) -- `DrawState.cs`
-- [Section 18: Render Context](#section-18-render-context) -- `RenderContext.cs`
-- [Section 19: The Automatic Uniform System](#section-19-the-automatic-uniform-system)
-- [Section 20: Window, Context, Render Loop, and Drawing a Triangle](#section-20-window-context-render-loop-and-drawing-a-triangle) -- `Program.cs`
+- [Section 8: Coordinate Spaces and Transform Chain](#section-8-coordinate-spaces-and-transform-chain) -- *scaffold*
+- [Section 9: OpenGL Fundamentals](#section-9-opengl-fundamentals) -- *scaffold*
+- [Section 10: Renderer Architecture Deep Dive](#section-10-renderer-architecture-deep-dive) -- Book §3.1 + §3.2
+- [Section 11: The Shader Pipeline](#section-11-the-shader-pipeline) -- Book §3.4.1-3 -- `ShaderProgram.cs`
+- [Section 12: Vertex Buffers](#section-12-vertex-buffers) -- Book §3.5 -- `BufferObject.cs`, `VertexAttrib.cs`, `VertexArrayObject.cs`
+- [Section 13: Textures](#section-13-textures) -- Book §3.6 -- `Texture2D.cs`
+- [Section 14: Vertex Data Layouts](#section-14-vertex-data-layouts) -- Book §3.5
+- [Section 15: Renderer State Objects](#section-15-renderer-state-objects) -- Book §3.3.2 + §3.3.5 -- `RenderState.cs`, `ClearState.cs`
+- [Section 16: Camera and Scene State](#section-16-camera-and-scene-state) -- Book §3.3 -- `CameraState.cs`, `SceneState.cs`
+- [Section 17: Draw State](#section-17-draw-state) -- Book §3.3.4 -- `DrawState.cs`
+- [Section 18: Render Context](#section-18-render-context) -- Book §3.2 + §3.3.3 -- `RenderContext.cs`
+- [Section 19: The Automatic Uniform System](#section-19-the-automatic-uniform-system) -- Book §3.4.5 -- `IAutomaticUniform.cs`, `AutomaticUniforms.cs`, concrete uniform classes
+- [Section 19.5: Framebuffers](#section-195-framebuffers) -- Book §3.7 -- `Framebuffer.cs`
+- [Section 20: Window, Context, Render Loop, and Drawing a Triangle](#section-20-window-context-render-loop-and-drawing-a-triangle) -- Book §3.8 -- `Program.cs`
+- [Section 20.5: Resources](#section-205-resources) -- Book §3.9
+
+> **Reading note for Part III.** The book's Chapter 3 presents topics in this order: §3.3 State Management, §3.4 Shaders, §3.5 Vertex Data, §3.6 Textures, §3.7 Framebuffers, §3.8 Triangle. This guide's sections are not yet physically in book order -- shaders (§11) come before state objects (§15-§18) because the original build order composed simpler types first. When reading alongside the book, follow this *logical* order: §10 → §15 → §16 → §17 → §18 → §11 → §19 → §12-§14 → §13 → §19.5 → §20 → §20.5. A future revision will physically reorder the file.
 
 ### Part IV -- Globe Rendering (Book Chapter 4)
-- [Section 21: Tessellating the Globe](#section-21-tessellating-the-globe)
-- [Section 22: Terrain and Imagery Tiles](#section-22-terrain-and-imagery-tiles)
-- [Section 23: Level-of-Detail Selection](#section-23-level-of-detail-selection)
-- [Section 24: Globe Surface Shading](#section-24-globe-surface-shading)
-- [Section 25: Texture Mapping on Ellipsoids](#section-25-texture-mapping-on-ellipsoids)
-- [Section 26: Putting It All Together](#section-26-putting-it-all-together)
+- [Section 21: Tessellating the Globe](#section-21-step-2--globe-tessellation) -- Book §4.1
+- [Section 22: Camera System](#section-22-step-3--camera-system) -- *scaffold (not a book section)*
+- [Section 23: Phong Shading](#section-23-step-4--phong-shading) -- Book §4.2.1
+- [Section 24: Latitude-Longitude Grid](#section-24-step-5--latitude-longitude-grid) -- Book §4.2.4
+- [Section 25: GPU Ray-Casted Globe](#section-25-step-6--gpu-ray-casted-globe) -- Book §4.3
+- [Section 26: Day/Night Globe Shading](#section-26-step-7--daynight-globe-shading) -- Book §4.2.5
 
 ### Part V -- Vertex Transform Precision (Book Chapter 5)
-- [Section 27: RTE and DSFP Vertex Transforms](#section-27-rte-and-dsfp-vertex-transforms)
+- [Section 27: RTE and DSFP Vertex Transforms](#section-27-step-8--fixing-vertex-jitter) -- Book §5.1-§5.5
 
 ### Part VI -- Depth Buffer Precision (Book Chapter 6)
-- [Section 28: Reversed-Z and Logarithmic Depth](#section-28-reversed-z-and-logarithmic-depth)
+- [Section 28: Reversed-Z and Logarithmic Depth](#section-28-step-9--fixing-depth-buffer-precision) -- Book §6.1-§6.5
 
 ### Appendices
-- [Appendix A: Solution and Project Setup](#appendix-a-solution-and-project-setup)
-- [Appendix B: Silk.NET Windowing Boilerplate](#appendix-b-silknet-windowing-boilerplate)
-- [Appendix C: GLSL Quick Reference](#appendix-c-glsl-quick-reference)
-- [Appendix D: Further Reading and Resources](#appendix-d-further-reading-and-resources)
+- [Appendix A: Solution and Project Setup](#appendix-a-build-instructions)
+- [Appendix B: OpenGlobe to Geode Translation Table](#appendix-b-openglobe-to-geode-translation-table)
+- [Appendix C: Silk.NET vs OpenTK Quick Reference](#appendix-c-silknet-vs-opentk-quick-reference)
+- [Appendix D: Rendering Challenges Unique to Virtual Globes](#appendix-d-rendering-challenges-unique-to-virtual-globes)
 
 ---
 
@@ -1601,19 +1607,23 @@ The current `ComputeCurve` implementation generates points by rotating in the pl
 - For a 10-degree arc at 45 degrees latitude: deviation ~ 10 meters
 - For a 90-degree arc at 45 degrees latitude: deviation ~ several kilometers
 
-For high-accuracy applications, each intermediate point should be projected back onto the ellipsoid surface using `ScaleToSurfaceGeodetic`:
+The book's `ComputeCurve` (Listing 2.11) projects each rotated point using `ScaleToGeocentricSurface`, not `ScaleToGeodeticSurface`. This is deliberate and important: the geocentric projection scales *along the origin-to-point line*, which keeps the projected point in the original rotation plane. The geodetic projection scales *along the surface normal*, which on an oblate ellipsoid does not pass through the origin -- so it moves the projected point out of the plane and produces a curve that is no longer planar. For the planar-arc visualization `ComputeCurve` is intended to produce, geocentric projection is correct and geodetic projection is wrong.
+
+If you are considering swapping in `ScaleToGeodeticSurface`, stop: you actually want a different routine, something closer to a true geodesic. See "True Geodesics vs Plane Arcs" below for when that matters.
+
+If the book-faithful geocentric projection is good enough:
 
 ```csharp
-// High-accuracy curve: project each point back to the surface
+// Book-faithful: project each point onto the ellipsoid while preserving the plane
 IList<Vector3D> rawCurve = ellipsoid.ComputeCurve(start, end, granularity);
-List<Vector3D> accurateCurve = new List<Vector3D>(rawCurve.Count);
+List<Vector3D> onSurface = new List<Vector3D>(rawCurve.Count);
 foreach (Vector3D point in rawCurve)
 {
-    accurateCurve.Add(ellipsoid.ScaleToSurfaceGeodetic(point));
+    onSurface.Add(ellipsoid.ScaleToGeocentricSurface(point));
 }
 ```
 
-This is more expensive (Newton-Raphson per point) but ensures all points lie on the ellipsoid surface to sub-nanometer accuracy.
+`ScaleToGeocentricSurface` has a closed-form solution (no iteration) and is cheap. The resulting curve lies on the ellipsoid surface and stays in the original rotation plane, which is what the book wants.
 
 ### True Geodesics vs Plane Arcs
 
@@ -1643,9 +1653,70 @@ For visualization purposes, this deviation is rarely visible. For navigation and
 
 *Corresponds to Book Chapter 3: "Renderer Design"*
 
-The rendering layer sits between the raw OpenGL API (exposed through Silk.NET) and the high-level globe visualization. Its job is to turn the mathematical foundations from Part II into pixels on screen. This part builds the entire `Geode.Rendering` assembly and the initial `Geode.App` entry point -- twelve source files that compile and run as a complete, working rendering pipeline.
+The rendering layer sits between the raw OpenGL API (exposed through Silk.NET) and the high-level globe visualization. Its job is to turn the mathematical foundations from Part II into pixels on screen. This part builds the entire `Geode.Rendering` assembly and the initial `Geode.App` entry point -- source files that compile and run as a complete, working rendering pipeline.
 
 Every file appears in **strict build-dependency order**. When a class references another type, that type has already been defined in an earlier section. You can follow this part from start to finish, creating each file as you go, and the solution will compile at every step.
+
+### Following along with the book
+
+The book's Chapter 3 presents topics in this sequence:
+
+| Book | Topic | Geode section |
+|---|---|---|
+| §3.1 | The Need for a Renderer | §10 |
+| §3.2 | Bird's-Eye View (Device/Context) | §10, §18 |
+| §3.3 | State Management (RenderState, ClearState, DrawState, Context sync) | §15, §16, §17, §18 |
+| §3.4 | Shaders (compilation, vertex attributes, fragment outputs, uniforms, automatic uniforms) | §11, §19 |
+| §3.5 | Vertex Data (buffers, index buffers, vertex arrays, layouts, meshes) | §12, §14 |
+| §3.6 | Textures (textures, samplers, texture units) | §13 |
+| §3.7 | Framebuffers | §19.5 |
+| §3.8 | Putting It All Together: Rendering a Triangle | §20 |
+| §3.9 | Resources | §20.5 |
+
+The guide's physical order does **not** yet match the book. The current order is *build-dependency order* -- each section introduces the types its successors reference, so everything compiles incrementally from top to bottom. The book's order is *concept order* -- state before shaders, framebuffers before the triangle. Both are valid; they optimize for different things (compile-as-you-go vs. parallel reading with the book).
+
+If you are reading alongside the book, walk the guide in this logical order instead:
+
+```
+§8 (transform chain)  →  §9 (OpenGL primer)  →  §10 (renderer architecture)
+  →  §15 (RenderState, ClearState)  →  §16 (CameraState, SceneState)
+  →  §17 (DrawState)  →  §18 (RenderContext)
+  →  §11 (ShaderProgram)  →  §19 (Automatic uniforms)
+  →  §12 (BufferObject, VertexAttrib, VAO)  →  §14 (Vertex data layouts)
+  →  §13 (Texture2D)  →  §19.5 (Framebuffer)
+  →  §20 (Triangle)  →  §20.5 (Resources)
+```
+
+A future revision will physically reorder the file to match book order. For now, the cross-reference note at the top of each section tells you where in the book you are.
+
+### What the guide faithfully implements from the book
+
+Part III now matches the book's architecture on every major structure:
+
+- **Book §3.3 State Management.** `RenderState`, `ClearState`, `DrawState` match the book. Geode's `RenderContext` does shadow-state comparison before issuing GL state-change calls (§18). Every `ApplyXxx` helper compares against the shadow before calling GL, exactly as the book prescribes.
+- **Book §3.4.1-3 Shader compilation and fragment outputs.** `ShaderProgram` compiles, links, discovers active uniforms at link time via `glGetActiveUniform`, and populates a `FragmentOutputs` collection via `glGetFragDataLocation` (§11).
+- **Book §3.4.4 Uniforms.** Typed `Uniform` / `Uniform<T>` hierarchy, concrete `UniformFloatMatrix44GL` et al., named `UniformCollection` on `ShaderProgram`, dirty list + `Clean` flush via `glProgramUniform*` (§19).
+- **Book §3.4.5 Automatic Uniforms.** Full `LinkAutomaticUniform` + `DrawAutomaticUniformFactory` + `DrawAutomaticUniform` split, `AutomaticUniformFactoryCollection` registry, per-program automatic-uniform list populated at link time (§19). The `og_` naming convention is book-faithful.
+- **Book §3.5 Vertex Data.** `BufferObject<T>`, `VertexAttrib`, `VertexArrayObject` with DSA (§12, §14).
+- **Book §3.6 Textures.** `Texture2D` with DSA, samplers, texture units (§13). `Texture2DDescription` carries format-renderability flags consumed by `Framebuffer` validation.
+- **Book §3.7 Framebuffers.** Indexable `ColorAttachments` collection, single `DepthAttachment` / `DepthStencilAttachment` slots, format validation at assignment time, delayed `glNamedFramebufferTexture` flushed on `Bind()`, named fragment-output routing via `shader.FragmentOutputs["name"]` (§19.5).
+- **Book §3.8 Triangle.** The payoff example (§20) uses the automatic uniform for MVP and the manual `Uniforms[...]` collection for per-draw values.
+
+### What the book covers that this guide does *not* yet cover
+
+Reading the book in parallel, you will still encounter concepts the guide does not yet implement:
+
+- **Book §3.2 Device/Context split.** The book separates a shareable `Device` (for `ShaderProgram`, `VertexBuffer`, `Texture2D`) from a non-shareable `Context` (for `VertexArray`, `Framebuffer`). GL forbids sharing VAOs and FBOs across contexts. Geode conflates both into `RenderContext` -- fine for a single-window demo, breaks for multi-window. The automatic-uniform registry that the book puts on `Device` is a static class in Geode (`AutomaticUniformFactoryCollection`).
+- **Book §3.3.1 failed-approach walkthrough.** The book walks through three incorrect approaches to state management (naive enable/disable, `glPushAttrib`/`glPopAttrib`, full-reset) before presenting the shadow-state design. The guide skips straight to the final design.
+- **Book §3.3.2 PrimitiveRestart and StencilTest.** Not in Geode's `RenderState` yet.
+- **Book §3.3.3 version-integer coarse-check.** Comparing a single integer before fine-grained state field comparison. A cheap optimization not yet implemented.
+- **Book §3.3.6 sort-by-state.** Sorting draws by shader → depth-test → blending before issuing them is the standard optimization for scenes with many objects.
+- **Book §3.4.6 ShaderCache.** Reference-counted cache so sort-by-shader works. Requires reference equality for identical shader sources.
+- **Book §3.4.1 embedded shader resources.** OpenGlobe ships shaders as assembly-embedded resources (`EmbeddedResources.GetText(...)`). Geode reads them from disk. Cosmetic difference.
+- **Book §3.4.1 built-in constant preamble.** `og_pi`, `og_halfPi`, etc. injected as a shader-source preamble. Geode expects shaders to use GLSL's `radians(180.0)` instead.
+- **Book §3.6 PBOs and TextureRectangle.** Pixel Buffer Objects enable async texture uploads from disk. `TextureRectangle` supports unnormalized coordinates, used in Chapter 11 height-field ray casting.
+
+These are candidate follow-up work, prioritized by which globe-rendering features they enable.
 
 ---
 
@@ -1843,12 +1914,12 @@ layout(location = 1) in vec3 aColor;      // Vertex attribute: color
 
 out vec3 vColor;                           // Output to fragment shader
 
-uniform mat4 uMVP;                         // Model-View-Projection matrix
+uniform mat4 og_modelViewPerspectiveMatrix;        // Automatic uniform (see Section 19)
 
 void main()
 {
-    gl_Position = uMVP * vec4(aPosition, 1.0);  // Transform to clip space
-    vColor = aColor;                              // Pass color through
+    gl_Position = og_modelViewPerspectiveMatrix * vec4(aPosition, 1.0);  // Transform to clip space
+    vColor = aColor;                                              // Pass color through
 }
 ```
 
@@ -1965,16 +2036,27 @@ Application calls:  context.Draw(PrimitiveType.Triangles, drawState, sceneState)
                       └── Compare rasterization    -> glPolygonMode
                           │
                           v
-                    Bind ShaderProgram (glUseProgram)
-                          │
-                          v
-                    SetSceneUniforms(sceneState)
-                      ├── uMVP            (mat4)
-                      ├── uView           (mat4)
-                      ├── uProjection     (mat4)
-                      ├── uCameraEye      (vec3)
-                      ├── uSunPosition    (vec3)
-                      └── uDiffuseSpecularAmbientShininess (vec4)
+                    shader.Bind(ctx, drawState, sceneState)
+                      ├── glUseProgram
+                      ├── For each DrawAutomaticUniform in the program:
+                      │     auto.Set(...)  →  Uniform<T>.Value = newValue
+                      │                       (dirties the uniform if changed)
+                      │   Examples (only those the shader actually declares):
+                      │     og_modelViewPerspectiveMatrix        (mat4)
+                      │     og_viewMatrix                        (mat4)
+                      │     og_perspectiveMatrix                 (mat4)
+                      │     og_cameraEye                         (vec3)
+                      │     og_cameraLightPosition               (vec3)
+                      │     og_sunPosition                       (vec3)
+                      │     og_diffuseSpecularAmbientShininess   (vec4)
+                      │     og_viewport / og_inverseViewport     (vec4)
+                      │     og_wgs84Height                       (float)
+                      │     og_texture0..7                       (sampler2D, link-automatic)
+                      │   (see Section 19 for the full registry/factory architecture)
+                      └── Clean():
+                            foreach (ICleanable u in _dirtyUniforms)
+                                u.Clean();   // glProgramUniform*
+                            _dirtyUniforms.Clear();
                           │
                           v
                     Bind VAO (glBindVertexArray)
@@ -2009,170 +2091,175 @@ The following sections implement these concepts in build-dependency order. Each 
 
 ## Section 11: The Shader Pipeline
 
-*Corresponds to Book Chapter 3, Section 3.4*
+*Corresponds to Book Chapter 3, Section 3.4.1 (Compiling and Linking Shaders) and Section 3.4.3 (Fragment Outputs)*
 
 *OpenGlobe source: `Source/Renderer/GL3x/Shaders/ShaderProgramGL3x.cs`*
 
-A shader program is a pair of GLSL source files (vertex + fragment) compiled and linked into a single GPU program. The `ShaderProgram` class handles compilation, error checking, linking, and uniform setting.
+A shader program is a pair of GLSL source files (vertex + fragment) compiled and linked into a single GPU program. `ShaderProgram` is the largest class in `Geode.Rendering` because it is the orchestrator: it compiles source, links the program, discovers active uniforms and fragment outputs, constructs typed `Uniform` wrappers for each, consults the automatic-uniform registry, and tracks which of its uniforms are dirty so they can be flushed to the GPU before a draw.
 
-This is the first file in `Geode.Rendering` that we build. It has no internal dependencies -- only Silk.NET.
+This section builds the compile/link/fragment-output portion. Section 19 introduces the uniform subsystem and the rest of the `ShaderProgram` class (the `Uniforms` collection, the dirty list, `Bind`, `Clean`, `InitializeUniforms`, `InitializeAutomaticUniforms`).
 
-### Design Decisions
+### Design decisions
 
-**Why throw exceptions on compile/link errors?** A shader that fails to compile is a programmer error -- the source is wrong. Silently returning a null program would push the error to the first draw call, making it much harder to diagnose. Failing fast with a descriptive message (including the full GLSL error log) makes shader debugging tractable.
+**Fail-fast on compile/link errors.** A shader that fails to compile is a programmer error. Silently returning a null program would push the error to the first draw call, making it much harder to diagnose. Throw with the full GLSL info log attached to the exception message.
 
-**Why delete individual shaders after linking?** Once `glLinkProgram` succeeds, the individual vertex and fragment shader objects are no longer needed. The linked program contains all the compiled code. Deleting them immediately prevents resource leaks. We also detach them first, which is good practice even though deletion would detach them implicitly.
+**Delete individual shader objects after linking.** `glLinkProgram` copies the compiled code into the linked program. The individual shader objects are no longer needed. Detach and delete them in the constructor.
 
-**Why return -1 silently for missing uniforms?** The GLSL compiler is allowed to optimize away uniforms that are not used in the shader output. Setting a uniform at location -1 is a no-op in OpenGL -- it does not generate an error. Silently returning -1 means application code can set uniforms without checking whether the current shader actually uses them. This is important when the same `SceneState` uniform-setting code is used with multiple shaders.
+**Expose a typed uniform collection, not raw `SetInt/SetVec3` helpers.** The book's design routes every uniform through a `Uniform<T>.Value` setter that caches the value and dirties the uniform. Raw `glUniform*` helpers bypass the dirty list; keeping them would encourage patterns that duplicate work on every draw. Section 19 presents the collection; this section does not expose any per-type setter on `ShaderProgram`.
 
-### Complete Source
+**Discover fragment outputs after link.** `glGetProgramInterface(GL_PROGRAM_OUTPUT)` yields the name-to-location mapping for every `out vec4 xxx;` declaration in the fragment shader. The `FragmentOutputs` collection is used by `Framebuffer` (Section 19.5) to route named outputs to specific color attachments: `framebuffer.ColorAttachments[shader.FragmentOutputs["dayColor"]] = dayTexture`.
+
+### Complete source (compile/link + fragment outputs)
+
+The uniform-related fields and methods appear here as forward declarations to keep everything in one class; Section 19 defines the types they refer to (`UniformCollection`, `Uniform`, `DrawAutomaticUniform`, `ICleanable`, etc.) and implements `InitializeUniforms`/`InitializeAutomaticUniforms`/`Bind`/`Clean`.
 
 ```csharp
 // Geode.Rendering/ShaderProgram.cs
 //
 // Compiles GLSL vertex + fragment shaders, links them into a program,
-// and provides typed uniform setters.
+// discovers active uniforms and fragment outputs, and wires up automatic
+// uniforms from the device-level registry.
 //
-// Book Chapter 3, Section 3.4.
-// OpenGlobe: Source/Renderer/GL3x/Shaders/ShaderProgramGL3x.cs
-//
-// Design: Fail-fast on compilation errors. Silent on missing uniforms.
-// The caller never needs to check whether a uniform exists -- setting a
-// nonexistent uniform is a no-op.
+// Book Chapter 3, Sections 3.4.1, 3.4.3, 3.4.4, 3.4.5.
+// OpenGlobe: Source/Renderer/GL3x/Shaders/ShaderProgramGL3x.cs.
 
 using Silk.NET.OpenGL;
 using System;
+using System.Collections.Generic;
+using Geode.Rendering.Uniforms;
 
 namespace Geode.Rendering
 {
     /// <summary>
-    /// A compiled and linked GLSL shader program (vertex + fragment).
-    /// Wraps a GL program handle and provides typed uniform setters.
+    /// A compiled and linked GLSL shader program.
+    /// Owns a typed <see cref="UniformCollection"/>, a list of draw-automatic
+    /// uniform setters populated at link time, and a dirty list of uniforms
+    /// pending upload to the GPU.
     /// </summary>
-    public class ShaderProgram : IDisposable
+    public class ShaderProgram : IDisposable, ICleanableObserver
     {
         private readonly GL _gl;
         private readonly uint _handle;
+        private readonly UniformCollection _uniforms = new();
+        private readonly List<ICleanable> _dirtyUniforms = new();
+        private readonly List<DrawAutomaticUniform> _drawAutomaticUniforms = new();
+        private readonly FragmentOutputs _fragmentOutputs;
 
         /// <summary>The raw GL program handle.</summary>
         public uint Handle => _handle;
+
+        /// <summary>Every active uniform declared by this program, keyed by GLSL name.</summary>
+        public UniformCollection Uniforms => _uniforms;
+
+        /// <summary>Name-to-location mapping for the fragment shader's `out` variables.</summary>
+        public FragmentOutputs FragmentOutputs => _fragmentOutputs;
 
         // ---------------------------------------------------------------
         // Construction
         // ---------------------------------------------------------------
 
-        /// <summary>
-        /// Compiles vertex and fragment shader sources, links them into a program.
-        /// Throws on compilation or link failure with the full GLSL error log.
-        /// </summary>
-        /// <param name="gl">The Silk.NET OpenGL context.</param>
-        /// <param name="vertexSource">Complete GLSL vertex shader source.</param>
-        /// <param name="fragmentSource">Complete GLSL fragment shader source.</param>
-        /// <exception cref="Exception">Thrown if compilation or linking fails.</exception>
         public ShaderProgram(GL gl, string vertexSource, string fragmentSource)
         {
             _gl = gl;
 
-            // Compile individual shaders
             uint vertexShader = CompileShader(ShaderType.VertexShader, vertexSource);
             uint fragmentShader = CompileShader(ShaderType.FragmentShader, fragmentSource);
 
-            // Create program and link
             _handle = _gl.CreateProgram();
             _gl.AttachShader(_handle, vertexShader);
             _gl.AttachShader(_handle, fragmentShader);
             _gl.LinkProgram(_handle);
 
-            // Check link status
             _gl.GetProgram(_handle, ProgramPropertyARB.LinkStatus, out int status);
             if (status == 0)
             {
                 string log = _gl.GetProgramInfoLog(_handle);
-                // Clean up before throwing
                 _gl.DeleteProgram(_handle);
                 _gl.DeleteShader(vertexShader);
                 _gl.DeleteShader(fragmentShader);
                 throw new Exception($"Shader link error: {log}");
             }
 
-            // Once linked, individual shaders are no longer needed.
-            // Detach first (good practice), then delete to free GPU memory.
             _gl.DetachShader(_handle, vertexShader);
             _gl.DetachShader(_handle, fragmentShader);
             _gl.DeleteShader(vertexShader);
             _gl.DeleteShader(fragmentShader);
+
+            // Populate the uniform collection and wire up automatic uniforms.
+            // Implementation in Section 19.
+            InitializeUniforms();
+            InitializeAutomaticUniforms();
+
+            // Discover fragment outputs for framebuffer binding (Section 19.5).
+            _fragmentOutputs = new FragmentOutputs(_gl, _handle);
         }
 
-        /// <summary>
-        /// Creates a ShaderProgram from vertex and fragment shader files on disk.
-        /// </summary>
-        /// <param name="gl">The Silk.NET OpenGL context.</param>
-        /// <param name="vertexPath">Path to the .vert file.</param>
-        /// <param name="fragmentPath">Path to the .frag file.</param>
-        /// <returns>A compiled and linked ShaderProgram.</returns>
         public static ShaderProgram FromFiles(GL gl, string vertexPath, string fragmentPath)
         {
-            string vertexSource = System.IO.File.ReadAllText(vertexPath);
-            string fragmentSource = System.IO.File.ReadAllText(fragmentPath);
-            return new ShaderProgram(gl, vertexSource, fragmentSource);
+            return new ShaderProgram(gl,
+                System.IO.File.ReadAllText(vertexPath),
+                System.IO.File.ReadAllText(fragmentPath));
         }
 
         // ---------------------------------------------------------------
-        // Usage
+        // Bind + Clean (flush dirty uniforms). Called by RenderContext.
+        // Implementation in Section 19.
         // ---------------------------------------------------------------
 
+        public void Bind(RenderContext ctx, DrawState drawState, SceneState sceneState) { /* Section 19 */ }
+        public void Clean() { /* Section 19 */ }
+
         /// <summary>
-        /// Activates this shader program for subsequent draw calls.
-        /// Equivalent to glUseProgram(handle).
+        /// Low-level: make this program the current GL program (glUseProgram).
+        /// For draws, prefer Bind(ctx, drawState, sceneState), which also runs
+        /// automatic uniforms and flushes the dirty list. Use() exists for the
+        /// rare case where client code wants the program current outside a draw,
+        /// e.g. for diagnostics. Setting uniforms through the Uniforms collection
+        /// does NOT require the program to be current -- glProgramUniform* works
+        /// on any program handle.
         /// </summary>
         public void Use() => _gl.UseProgram(_handle);
 
+        // ICleanableObserver: Uniform<T>.Value setters call this when a cached
+        // value changes so we know to flush it on the next Clean().
+        void ICleanableObserver.NotifyDirty(ICleanable c) => _dirtyUniforms.Add(c);
+
         // ---------------------------------------------------------------
-        // Uniform setters
+        // Uniform and automatic-uniform initialization (Section 19)
         // ---------------------------------------------------------------
 
-        /// <summary>Sets an integer uniform (e.g., sampler binding).</summary>
+        private void InitializeUniforms() { /* Section 19 */ }
+        private void InitializeAutomaticUniforms() { /* Section 19 */ }
+
+        // ---------------------------------------------------------------
+        // Typed convenience setters.
+        // These are pure shortcuts over Uniforms[name].Value = value --
+        // they go through the same typed collection and dirty-list path
+        // that the book's architecture uses. They do NOT bypass dirtying
+        // like the old raw-glUniform helpers did.
+        // ---------------------------------------------------------------
+
         public void SetInt(string name, int value)
-            => _gl.Uniform1(GetUniformLocation(name), value);
+            => ((Uniform<int>)_uniforms[name]).Value = value;
 
-        /// <summary>Sets a float uniform.</summary>
         public void SetFloat(string name, float value)
-            => _gl.Uniform1(GetUniformLocation(name), value);
+            => ((Uniform<float>)_uniforms[name]).Value = value;
 
-        /// <summary>Sets a vec3 uniform (e.g., camera position, light direction).</summary>
         public void SetVec3(string name, float x, float y, float z)
-            => _gl.Uniform3(GetUniformLocation(name), x, y, z);
+            => ((Uniform<System.Numerics.Vector3>)_uniforms[name]).Value
+                = new System.Numerics.Vector3(x, y, z);
 
-        /// <summary>Sets a vec4 uniform (e.g., color, material properties).</summary>
         public void SetVec4(string name, float x, float y, float z, float w)
-            => _gl.Uniform4(GetUniformLocation(name), x, y, z, w);
+            => ((Uniform<System.Numerics.Vector4>)_uniforms[name]).Value
+                = new System.Numerics.Vector4(x, y, z, w);
 
-        /// <summary>
-        /// Sets a mat4 uniform (e.g., MVP matrix).
-        /// The array must contain exactly 16 floats in column-major order
-        /// (OpenGL's default matrix layout).
-        /// </summary>
-        public void SetMat4(string name, float[] mat)
-            => _gl.UniformMatrix4(GetUniformLocation(name), 1, false, mat);
+        public void SetMat4(string name, System.Numerics.Matrix4x4 m)
+            => ((Uniform<System.Numerics.Matrix4x4>)_uniforms[name]).Value = m;
 
         // ---------------------------------------------------------------
-        // Internals
+        // Shader compilation
         // ---------------------------------------------------------------
 
-        /// <summary>
-        /// Gets the location of a uniform variable by name.
-        /// Returns -1 if the uniform does not exist or was optimized away.
-        /// Setting a uniform at location -1 is a no-op in OpenGL.
-        /// </summary>
-        private int GetUniformLocation(string name)
-        {
-            int loc = _gl.GetUniformLocation(_handle, name);
-            return loc;
-        }
-
-        /// <summary>
-        /// Compiles a single shader stage (vertex or fragment).
-        /// </summary>
         private uint CompileShader(ShaderType type, string source)
         {
             uint shader = _gl.CreateShader(type);
@@ -2194,26 +2281,80 @@ namespace Geode.Rendering
         // Disposal
         // ---------------------------------------------------------------
 
-        /// <summary>
-        /// Deletes the GL program. Must be called on the render thread.
-        /// </summary>
-        public void Dispose()
+        public void Dispose() => _gl.DeleteProgram(_handle);
+    }
+}
+```
+
+### FragmentOutputs
+
+A small class that populates itself from `glGetProgramResourceIndex` / `glGetFragDataLocation`.
+
+```csharp
+// Geode.Rendering/FragmentOutputs.cs
+//
+// Maps fragment shader out-variable names to color attachment indices.
+// Example: with "out vec4 dayColor; out vec4 nightColor;" in the fragment shader,
+// FragmentOutputs["dayColor"] might be 0 and FragmentOutputs["nightColor"] 1.
+
+using Silk.NET.OpenGL;
+using System.Collections.Generic;
+
+namespace Geode.Rendering
+{
+    /// <summary>
+    /// Name-to-location mapping for a linked fragment shader's `out` variables.
+    /// Used by Framebuffer.ColorAttachments to connect named outputs to attachment slots.
+    /// </summary>
+    public sealed class FragmentOutputs
+    {
+        private readonly GL _gl;
+        private readonly uint _program;
+        private readonly Dictionary<string, int> _cache = new();
+
+        internal FragmentOutputs(GL gl, uint program)
         {
-            _gl.DeleteProgram(_handle);
+            _gl = gl;
+            _program = program;
+        }
+
+        /// <summary>
+        /// Returns the color attachment index that the fragment shader's named
+        /// `out` variable writes to. Cached after first lookup.
+        /// </summary>
+        public int this[string name]
+        {
+            get
+            {
+                if (_cache.TryGetValue(name, out int loc)) return loc;
+
+                loc = _gl.GetFragDataLocation(_program, name);
+                if (loc < 0)
+                    throw new System.Exception($"Fragment shader has no `out` named '{name}'.");
+
+                _cache[name] = loc;
+                return loc;
+            }
         }
     }
 }
 ```
 
-**Line count:** ~110 lines (excluding blank lines and comments).
+### What this gives us
 
-**What this gives us:** Any pair of GLSL source strings can be compiled, linked, and used in three lines:
+Any pair of GLSL source strings can be compiled, linked, and used in three lines:
 
 ```csharp
 var shader = new ShaderProgram(gl, vertSrc, fragSrc);
-shader.Use();
-shader.SetMat4("uMVP", mvpMatrix);
+
+// Per-draw manual uniform (e.g., object tint):
+((Uniform<Vector4>)shader.Uniforms["u_objectColor"]).Value = tint;
+
+// Automatic uniforms (og_modelViewPerspectiveMatrix, og_cameraEye, ...)
+// are populated by the engine during RenderContext.Draw -- see Section 19.
 ```
+
+For shaders with many color attachments (§19.5 Framebuffers), the FragmentOutputs collection connects the shader's named outputs to specific framebuffer attachment slots.
 
 ---
 
@@ -2474,11 +2615,13 @@ A texture is a 2D image stored on the GPU, sampled by fragment shaders to color 
 
 ### Texture Concepts
 
-**Samplers** are the GLSL mechanism for reading textures. A `sampler2D` uniform is bound to a **texture unit** (an integer slot). The texture unit links the GLSL sampler to a specific texture object. In code:
+**Samplers** are the GLSL mechanism for reading textures. A `sampler2D` uniform is bound to a **texture unit** (an integer slot). The texture unit links the GLSL sampler to a specific texture object.
+
+For the conventional `og_texture0..og_texture7` names, Section 19's link-automatic `TextureUniform` binds them to units 0..7 at shader link time -- no application code needed. For other sampler names (e.g. a shader-specific `u_dayTexture`), bind manually via the `Uniforms` collection:
 
 ```csharp
-texture.Bind(0);                      // Bind texture to unit 0
-shader.SetInt("uTexture", 0);         // Tell the sampler to read from unit 0
+texture.Bind(0);                                                     // Bind texture to unit 0
+((Uniform<int>)shader.Uniforms["u_dayTexture"]).Value = 0;           // Tell the sampler to read from unit 0
 ```
 
 **Filtering** controls how the GPU interpolates between texels (texture pixels):
@@ -3661,7 +3804,7 @@ namespace Geode.Rendering
         // ---------------------------------------------------------------
 
         /// <summary>
-        /// Applies render state, binds shader and VAO, sets scene uniforms,
+        /// Applies render state, binds shader and VAO, pushes automatic uniforms,
         /// and issues an indexed draw call (glDrawElements).
         /// </summary>
         /// <param name="primitiveType">Triangle, line, point, etc.</param>
@@ -3673,11 +3816,21 @@ namespace Geode.Rendering
             // 1. Apply render state (shadow comparison)
             ApplyRenderState(drawState.RenderState);
 
-            // 2. Bind shader
-            drawState.ShaderProgram.Use();
+            // 2. Depth-required rule (Section 19.5)
+            if (drawState.RenderState.DepthTest.Enabled
+                && _currentFramebuffer is not null
+                && !_currentFramebuffer.HasDepthAttachment)
+            {
+                throw new InvalidOperationException(
+                    "DepthTest is enabled but the current framebuffer has no depth attachment.");
+            }
 
-            // 3. Set scene uniforms
-            SetSceneUniforms(drawState.ShaderProgram, sceneState);
+            // 3. Bind the shader. This does three things under the hood (Section 19):
+            //    a. glUseProgram
+            //    b. Evaluate every DrawAutomaticUniform, writing into its Uniform<T>.Value
+            //       (which may or may not dirty the uniform depending on value change)
+            //    c. Flush the dirty-uniform list to the GPU via glProgramUniform*
+            drawState.ShaderProgram.Bind(this, drawState, sceneState);
 
             // 4. Bind VAO
             _gl.BindVertexArray(drawState.VertexArrayObject.Handle);
@@ -3701,49 +3854,9 @@ namespace Geode.Rendering
             SceneState sceneState, uint first, uint count)
         {
             ApplyRenderState(drawState.RenderState);
-            drawState.ShaderProgram.Use();
-            SetSceneUniforms(drawState.ShaderProgram, sceneState);
+            drawState.ShaderProgram.Bind(this, drawState, sceneState);
             _gl.BindVertexArray(drawState.VertexArrayObject.Handle);
             _gl.DrawArrays(primitiveType, (int)first, count);
-        }
-
-        // ---------------------------------------------------------------
-        // Scene uniforms
-        // ---------------------------------------------------------------
-
-        /// <summary>
-        /// Sets standard scene uniforms on the given shader program.
-        /// Shaders that do not use a particular uniform will silently
-        /// ignore it (setting at location -1 is a no-op).
-        /// </summary>
-        private void SetSceneUniforms(ShaderProgram shader, SceneState scene)
-        {
-            // MVP matrix (combined model-view-projection)
-            Matrix4x4 mvp = scene.ModelViewPerspectiveMatrix;
-            shader.SetMat4("uMVP", Matrix4x4ToArray(mvp));
-
-            // View matrix (for eye-space lighting calculations)
-            Matrix4x4 view = scene.ViewMatrix;
-            shader.SetMat4("uView", Matrix4x4ToArray(view));
-
-            // Projection matrix (for reconstruction from depth)
-            Matrix4x4 proj = scene.PerspectiveMatrix;
-            shader.SetMat4("uProjection", Matrix4x4ToArray(proj));
-
-            // Camera position (for specular lighting and atmospheric effects)
-            Vector3 eye = scene.CameraEyeFloat;
-            shader.SetVec3("uCameraEye", eye.X, eye.Y, eye.Z);
-
-            // Sun position (directional light source)
-            shader.SetVec3("uSunPosition",
-                (float)scene.SunPosition.X,
-                (float)scene.SunPosition.Y,
-                (float)scene.SunPosition.Z);
-
-            // Material/lighting parameters packed into a vec4
-            Vector4 dsas = scene.DiffuseSpecularAmbientShininess;
-            shader.SetVec4("uDiffuseSpecularAmbientShininess",
-                dsas.X, dsas.Y, dsas.Z, dsas.W);
         }
 
         /// <summary>
@@ -4074,89 +4187,1247 @@ The book (Section 3.6) covers Framebuffer Objects (FBOs) for off-screen renderin
 
 ## Section 19: The Automatic Uniform System
 
-*Corresponds to Book Chapter 3, Section 3.4.2*
+*Corresponds to Book Chapter 3, Section 3.4.4 (Uniforms) and Section 3.4.5 (Automatic Uniforms)*
 
-*OpenGlobe source: `Source/Renderer/GL3x/Shaders/UniformFactory.cs`, `Source/Renderer/DrawAutomaticUniforms/`*
+*OpenGlobe source: `Source/Renderer/Shaders/Uniform.cs`, `Uniform{T}.cs`, `UniformType.cs`, `Source/Renderer/GL3x/Shaders/UniformFloatMatrix44GL3x.cs` (and siblings), `Source/Renderer/DrawAutomaticUniforms/`, `Source/Renderer/LinkAutomaticUniforms/`, `Source/Renderer/AutomaticUniformFactoryCollection.cs`.*
 
-This is a conceptual section -- no new code files. It explains the book's automatic uniform system and how our simplified version in `SceneState`/`RenderContext` achieves the same goal.
+This section ports the book's full uniform architecture. It is a three-tier design -- a typed uniform value cache, a dirty-list upload mechanism, and an automatic-uniform factory system -- that together replace the naive "call `glUniform*` for every uniform every frame" pattern.
 
-### The Problem
+*Files we build in this section:*
 
-In a naive renderer, every draw call manually sets its uniforms:
+```
+Geode.Rendering/Uniforms/
+  UniformType.cs                              -- enum for all GLSL uniform types
+  ICleanable.cs                               -- anything with pending GPU work
+  ICleanableObserver.cs                       -- callback for dirty notification
+  Uniform.cs                                  -- abstract base
+  Uniform{T}.cs                               -- generic, holds Value + dirties on change
+  UniformCollection.cs                        -- named collection on ShaderProgram
+  GL/UniformFloatGL.cs                        -- concrete: float
+  GL/UniformFloatVector2GL.cs                 -- concrete: vec2
+  GL/UniformFloatVector3GL.cs                 -- concrete: vec3
+  GL/UniformFloatVector4GL.cs                 -- concrete: vec4
+  GL/UniformFloatMatrix33GL.cs                -- concrete: mat3
+  GL/UniformFloatMatrix44GL.cs                -- concrete: mat4
+  GL/UniformIntGL.cs                          -- concrete: int / sampler*
+  LinkAutomaticUniform.cs                     -- abstract base
+  LinkAutomaticUniforms/
+    TextureUniform.cs                         -- og_texture0..7 -> unit 0..7
+  DrawAutomaticUniform.cs                     -- abstract base (set per draw)
+  DrawAutomaticUniformFactory.cs              -- abstract factory
+  DrawAutomaticUniforms/
+    ModelViewPerspectiveMatrixUniform.cs      -- og_modelViewPerspectiveMatrix
+    ViewMatrixUniform.cs                      -- og_viewMatrix
+    PerspectiveMatrixUniform.cs               -- og_perspectiveMatrix
+    CameraEyeUniform.cs                       -- og_cameraEye
+    CameraLightPositionUniform.cs             -- og_cameraLightPosition
+    SunPositionUniform.cs                     -- og_sunPosition
+    DiffuseSpecularAmbientShininessUniform.cs -- og_diffuseSpecularAmbientShininess
+    ViewportUniform.cs                        -- og_viewport
+    InverseViewportUniform.cs                 -- og_inverseViewport
+    PixelSizePerDistanceUniform.cs            -- og_pixelSizePerDistance
+    Wgs84HeightUniform.cs                     -- og_wgs84Height
+  AutomaticUniformFactoryCollection.cs        -- the registry (lives on Device)
+```
+
+Plus modifications to `Geode.Rendering/ShaderProgram.cs` (adds the `Uniforms` collection, dirty list, `Clean`, `InitializeAutomaticUniforms`, `Bind`) and `Geode.Rendering/RenderContext.cs` (simplified `Draw`).
+
+### Architecture at a glance
+
+```
+Application code
+   │
+   │  ((Uniform<Matrix4x4>)sp.Uniforms["u_modelMatrix"]).Value = m   (manual, per draw)
+   │
+   ▼
+Uniform<T>.Value setter
+   │
+   │  1. compare new value to cached; return if identical
+   │  2. store new value in _value field
+   │  3. if not already dirty: mark dirty, notify owning ShaderProgram
+   │
+   ▼
+ShaderProgram._dirtyUniforms  (List<ICleanable>)
+   │
+   │  next time RenderContext.Draw fires, after glUseProgram:
+   │    foreach (ICleanable c in _dirtyUniforms) c.Clean();
+   │    _dirtyUniforms.Clear();
+   │
+   ▼
+UniformFloatMatrix44GL.Clean()  ──> glProgramUniformMatrix4fv(...)
+```
+
+Draw-automatic uniforms feed into the same pipeline:
+
+```
+RenderContext.Draw(drawState, sceneState)
+   │
+   │  applies render state
+   │  calls drawState.ShaderProgram.Bind(this, drawState, sceneState)
+   │
+   ▼
+ShaderProgram.Bind
+   │
+   │  glUseProgram
+   │  foreach (DrawAutomaticUniform u in _drawAutomaticUniforms)
+   │      u.Set(context, drawState, sceneState)   // calls _uniform.Value = ...
+   │                                              // which dirties via observer
+   │  foreach (ICleanable c in _dirtyUniforms) c.Clean();
+   │  _dirtyUniforms.Clear();
+   │
+   ▼
+Bind VAO, glDrawElements/glDrawArrays
+```
+
+The key property: **one GL call per uniform per frame, regardless of how many times client code sets the value**. Setting `uniform.Value = m` a hundred times in the same frame from different places (shared matrix, redundant assignment) still results in exactly one `glProgramUniformMatrix4fv` call.
+
+### Tier 1: `UniformType` enum
+
+The full set of GLSL uniform types the book covers. `UniformType` values map directly onto `GL_FLOAT`, `GL_FLOAT_VEC3`, `GL_FLOAT_MAT4`, etc. that `glGetActiveUniform` returns. Silk.NET already has a `UniformType` enum; we wrap it in our own so the uniform subsystem doesn't leak GL enums into higher layers.
 
 ```csharp
-shader.SetMat4("uMVP", mvpMatrix);
-shader.SetVec3("uCameraEye", eyeX, eyeY, eyeZ);
-shader.SetVec3("uSunPosition", sunX, sunY, sunZ);
-// ... repeat for every shader, every frame
+// Geode.Rendering/Uniforms/UniformType.cs
+//
+// Enumeration of every GLSL uniform type we handle.
+// The values are the GL token numbers so casts to/from Silk.NET's
+// UniformType are identity -- but we keep a Geode-side type so the
+// uniform classes don't reference Silk.NET.OpenGL enums directly.
+
+namespace Geode.Rendering.Uniforms
+{
+    public enum UniformType : uint
+    {
+        // Scalars
+        Float            = 0x1406,  // GL_FLOAT
+        Int              = 0x1404,  // GL_INT
+        UnsignedInt      = 0x1405,  // GL_UNSIGNED_INT
+        Bool             = 0x8B56,  // GL_BOOL
+
+        // Float vectors
+        FloatVector2     = 0x8B50,  // GL_FLOAT_VEC2
+        FloatVector3     = 0x8B51,  // GL_FLOAT_VEC3
+        FloatVector4     = 0x8B52,  // GL_FLOAT_VEC4
+
+        // Int vectors
+        IntVector2       = 0x8B53,
+        IntVector3       = 0x8B54,
+        IntVector4       = 0x8B55,
+
+        // Bool vectors
+        BoolVector2      = 0x8B57,
+        BoolVector3      = 0x8B58,
+        BoolVector4      = 0x8B59,
+
+        // Square matrices
+        FloatMatrix22    = 0x8B5A,
+        FloatMatrix33    = 0x8B5B,
+        FloatMatrix44    = 0x8B5C,
+
+        // Non-square matrices (rarely used but part of GLSL)
+        FloatMatrix23    = 0x8B65,
+        FloatMatrix24    = 0x8B66,
+        FloatMatrix32    = 0x8B67,
+        FloatMatrix34    = 0x8B6C,
+        FloatMatrix42    = 0x8B69,
+        FloatMatrix43    = 0x8B6B,
+
+        // Samplers (all treated as Int for upload; the value is the texture unit)
+        Sampler1D        = 0x8B5D,
+        Sampler2D        = 0x8B5E,
+        Sampler3D        = 0x8B5F,
+        SamplerCube      = 0x8B60,
+        Sampler2DArray   = 0x8DC1,
+        Sampler2DShadow  = 0x8B62,
+    }
+}
 ```
 
-This is error-prone. If you add a new global uniform (say, `uTime`), you must update every draw call site. Miss one, and that shader gets stale data.
+### Tier 2: `ICleanable` and `ICleanableObserver`
 
-### OpenGlobe's Solution: Automatic Uniforms
+An `ICleanable` is anything with a pending GPU upload. A `Uniform<T>` whose CPU-side value was just changed is the canonical example. The `ICleanableObserver` is the interface `ShaderProgram` implements so uniforms can tell it "I'm dirty, queue me for the next `Clean()`."
 
-OpenGlobe solves this with a convention: any uniform whose name starts with `og_` is automatically set by the renderer. The `UniformFactory` scans each shader program's active uniforms at link time and creates setter objects for recognized names:
+```csharp
+// Geode.Rendering/Uniforms/ICleanable.cs
 
-| Uniform Name | Type | Source |
+namespace Geode.Rendering.Uniforms
+{
+    /// <summary>
+    /// An object with pending GPU work. ShaderProgram aggregates dirty cleanables
+    /// and flushes them with Clean() immediately before a draw.
+    /// </summary>
+    public interface ICleanable
+    {
+        void Clean();
+    }
+}
+```
+
+```csharp
+// Geode.Rendering/Uniforms/ICleanableObserver.cs
+
+namespace Geode.Rendering.Uniforms
+{
+    /// <summary>
+    /// Receives "I'm dirty" notifications from owned cleanables (typically Uniforms).
+    /// ShaderProgram implements this; it appends the cleanable to its dirty list
+    /// so the next draw flushes the change.
+    /// </summary>
+    public interface ICleanableObserver
+    {
+        void NotifyDirty(ICleanable cleanable);
+    }
+}
+```
+
+### Tier 2: `Uniform` (abstract base)
+
+Holds metadata only: name and GLSL type. Doesn't touch the value because concrete subclasses are strongly typed via the generic `Uniform<T>`.
+
+```csharp
+// Geode.Rendering/Uniforms/Uniform.cs
+
+namespace Geode.Rendering.Uniforms
+{
+    /// <summary>
+    /// Abstract base for one GLSL uniform in a linked shader program.
+    /// Clients do not use this type directly -- cast to <see cref="Uniform{T}"/>
+    /// to read or write the value.
+    /// </summary>
+    public abstract class Uniform : ICleanable
+    {
+        /// <summary>The GLSL uniform name as declared in the shader source.</summary>
+        public string Name { get; }
+
+        /// <summary>The GLSL type. Used to dispatch to the correct concrete subclass.</summary>
+        public UniformType Datatype { get; }
+
+        protected Uniform(string name, UniformType datatype)
+        {
+            Name = name;
+            Datatype = datatype;
+        }
+
+        /// <summary>Flush this uniform's cached value to the GPU. Called by ShaderProgram.</summary>
+        public abstract void Clean();
+    }
+}
+```
+
+### Tier 2: `Uniform<T>` (generic with caching setter)
+
+This is where the dirty-list mechanism lives. Setting `Value` to something different from the cached value marks the uniform dirty and notifies the owning program. Setting it to the same value is a no-op.
+
+```csharp
+// Geode.Rendering/Uniforms/Uniform{T}.cs
+
+using System.Collections.Generic;
+
+namespace Geode.Rendering.Uniforms
+{
+    /// <summary>
+    /// A strongly typed uniform. Concrete subclasses (<see cref="GL.UniformFloatMatrix44GL"/>, etc.)
+    /// override <see cref="Uniform.Clean"/> to call the appropriate glUniform* function.
+    /// </summary>
+    /// <typeparam name="T">CPU-side value type (float, Vector3, Matrix4x4, int, ...).</typeparam>
+    public abstract class Uniform<T> : Uniform
+    {
+        private T _value;
+        private readonly ICleanableObserver _observer;
+        private bool _dirty;
+
+        protected Uniform(string name, UniformType datatype, ICleanableObserver observer)
+            : base(name, datatype)
+        {
+            _observer = observer;
+            _value = default!;
+            // Mark dirty up front so the first draw pushes the initial value.
+            _dirty = true;
+            observer.NotifyDirty(this);
+        }
+
+        /// <summary>
+        /// The cached CPU-side value. Setting a different value marks the uniform dirty
+        /// (scheduled for GPU upload before the next draw). Setting the same value is a no-op.
+        /// </summary>
+        public T Value
+        {
+            get => _value;
+            set
+            {
+                if (EqualityComparer<T>.Default.Equals(_value, value))
+                    return;
+
+                _value = value;
+
+                if (!_dirty)
+                {
+                    _dirty = true;
+                    _observer.NotifyDirty(this);
+                }
+            }
+        }
+
+        /// <summary>For concrete subclasses: read the cached value without a dirty check.</summary>
+        protected T CurrentValue => _value;
+
+        /// <summary>For concrete subclasses: clear the dirty flag after a successful upload.</summary>
+        protected void MarkClean() => _dirty = false;
+    }
+}
+```
+
+### Tier 2: Concrete GL implementations
+
+One per GLSL type. They are small and mechanical -- each overrides `Clean()` to call the matching `glProgramUniform*` function. Using `glProgramUniform*` (core since 4.1) instead of `glUniform*` means Clean works regardless of which program is currently bound, which simplifies the design.
+
+**Template (mat4):**
+
+```csharp
+// Geode.Rendering/Uniforms/GL/UniformFloatMatrix44GL.cs
+
+using Silk.NET.OpenGL;
+using System.Numerics;
+
+namespace Geode.Rendering.Uniforms.GL
+{
+    /// <summary>
+    /// A mat4 uniform. Value is a row-major System.Numerics.Matrix4x4;
+    /// uploaded with transpose=true so glsl sees it in its native column-major layout.
+    /// </summary>
+    public sealed class UniformFloatMatrix44GL : Uniform<Matrix4x4>
+    {
+        private readonly Silk.NET.OpenGL.GL _gl;
+        private readonly uint _program;
+        private readonly int _location;
+
+        public UniformFloatMatrix44GL(Silk.NET.OpenGL.GL gl, uint program,
+            string name, int location, ICleanableObserver observer)
+            : base(name, UniformType.FloatMatrix44, observer)
+        {
+            _gl = gl;
+            _program = program;
+            _location = location;
+        }
+
+        public override unsafe void Clean()
+        {
+            Matrix4x4 v = CurrentValue;
+            _gl.ProgramUniformMatrix4(_program, _location, 1, true, (float*)&v);
+            MarkClean();
+        }
+    }
+}
+```
+
+**The rest follow the same pattern.** Only the `Clean` body differs:
+
+| File | T | Datatype | `Clean` body |
+|---|---|---|---|
+| `UniformFloatGL.cs` | `float` | `Float` | `_gl.ProgramUniform1(_program, _location, CurrentValue);` |
+| `UniformFloatVector2GL.cs` | `Vector2` | `FloatVector2` | `var v = CurrentValue; _gl.ProgramUniform2(_program, _location, v.X, v.Y);` |
+| `UniformFloatVector3GL.cs` | `Vector3` | `FloatVector3` | `var v = CurrentValue; _gl.ProgramUniform3(_program, _location, v.X, v.Y, v.Z);` |
+| `UniformFloatVector4GL.cs` | `Vector4` | `FloatVector4` | `var v = CurrentValue; _gl.ProgramUniform4(_program, _location, v.X, v.Y, v.Z, v.W);` |
+| `UniformFloatMatrix33GL.cs` | `Matrix3x3` | `FloatMatrix33` | same as mat4 but `ProgramUniformMatrix3` |
+| `UniformIntGL.cs` | `int` | `Int` / any `Sampler*` | `_gl.ProgramUniform1(_program, _location, CurrentValue);` |
+| `UniformBoolGL.cs` | `bool` | `Bool` | `_gl.ProgramUniform1(_program, _location, CurrentValue ? 1 : 0);` |
+| `UniformIntVector2GL.cs` | `(int, int)` | `IntVector2` | `var v = CurrentValue; _gl.ProgramUniform2(_program, _location, v.Item1, v.Item2);` |
+
+Add the remaining permutations (ivec3/4, bvec2/3/4, non-square matrices) as you need them. Each is a 15-line file.
+
+A `Matrix3x3` type is not in `System.Numerics`; use a local `readonly struct` with nine floats, or borrow one from Silk.NET.
+
+### Tier 2: `UniformCollection`
+
+A dictionary wrapper on `ShaderProgram` exposing all declared uniforms by name.
+
+```csharp
+// Geode.Rendering/Uniforms/UniformCollection.cs
+
+using System.Collections;
+using System.Collections.Generic;
+
+namespace Geode.Rendering.Uniforms
+{
+    /// <summary>
+    /// Named collection of <see cref="Uniform"/> objects owned by a <see cref="ShaderProgram"/>.
+    /// Populated at link time by scanning active uniforms.
+    /// </summary>
+    public sealed class UniformCollection : IEnumerable<Uniform>
+    {
+        private readonly Dictionary<string, Uniform> _uniforms = new();
+
+        /// <summary>Look up a uniform by its GLSL name. Throws if not found.</summary>
+        public Uniform this[string name] => _uniforms[name];
+
+        /// <summary>True if the shader declares a uniform with this name.</summary>
+        public bool Contains(string name) => _uniforms.ContainsKey(name);
+
+        /// <summary>Try to look up a uniform. Used by automatic-uniform initialization.</summary>
+        public bool TryGet(string name, out Uniform? uniform) => _uniforms.TryGetValue(name, out uniform);
+
+        internal void Add(Uniform uniform) => _uniforms.Add(uniform.Name, uniform);
+
+        public IEnumerator<Uniform> GetEnumerator() => _uniforms.Values.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+}
+```
+
+### Tier 3: Link-automatic uniforms
+
+A `LinkAutomaticUniform` fires *once*, at shader link time, to set a value that depends only on the shader and never changes. The only production example in the book is texture-unit binding: `uniform sampler2D og_texture0` always binds to unit 0.
+
+```csharp
+// Geode.Rendering/Uniforms/LinkAutomaticUniform.cs
+
+namespace Geode.Rendering.Uniforms
+{
+    /// <summary>
+    /// A uniform whose value is determined solely by the shader it appears in,
+    /// set once at link time. Contrasts with <see cref="DrawAutomaticUniform"/>
+    /// which is set before every draw.
+    /// </summary>
+    public abstract class LinkAutomaticUniform
+    {
+        /// <summary>The GLSL uniform name this setter handles.</summary>
+        public abstract string Name { get; }
+
+        /// <summary>The GLSL type the uniform must have.</summary>
+        public abstract UniformType Datatype { get; }
+
+        /// <summary>Called once at link time. Implementations cast to the concrete Uniform{T} type.</summary>
+        public abstract void Set(Uniform uniform);
+    }
+}
+```
+
+**Concrete: texture-unit bindings.** The `og_texture0..og_texture7` family binds sampler uniforms to their fixed texture units. OpenGlobe ships one class instance per unit; Geode can use a parameterized class and register eight instances.
+
+```csharp
+// Geode.Rendering/Uniforms/LinkAutomaticUniforms/TextureUniform.cs
+
+namespace Geode.Rendering.Uniforms.LinkAutomaticUniforms
+{
+    /// <summary>
+    /// Binds a sampler2D uniform named "og_textureN" to texture unit N.
+    /// Register one instance per unit (N = 0..7) at startup.
+    /// </summary>
+    public sealed class TextureUniform : LinkAutomaticUniform
+    {
+        private readonly int _textureUnit;
+        private readonly string _name;
+
+        public TextureUniform(int textureUnit)
+        {
+            _textureUnit = textureUnit;
+            _name = $"og_texture{textureUnit}";
+        }
+
+        public override string Name => _name;
+        public override UniformType Datatype => UniformType.Sampler2D;
+
+        public override void Set(Uniform uniform)
+        {
+            ((Uniform<int>)uniform).Value = _textureUnit;
+        }
+    }
+}
+```
+
+### Tier 3: Draw-automatic uniforms
+
+Set before every draw. Each `DrawAutomaticUniform` holds a reference to the specific `Uniform<T>` it targets and, in its `Set`, does `_uniform.Value = <something from SceneState>`. The assignment flows through `Uniform<T>.Value`'s setter, which dirties the uniform if the value changed. Then `ShaderProgram.Clean()` flushes.
+
+**Factory.**
+
+```csharp
+// Geode.Rendering/Uniforms/DrawAutomaticUniformFactory.cs
+
+namespace Geode.Rendering.Uniforms
+{
+    /// <summary>
+    /// Builds a <see cref="DrawAutomaticUniform"/> bound to a specific uniform
+    /// in a specific shader program. Consulted at link time by ShaderProgram.
+    /// </summary>
+    public abstract class DrawAutomaticUniformFactory
+    {
+        /// <summary>The GLSL uniform name this factory handles (e.g. "og_modelViewPerspectiveMatrix").</summary>
+        public abstract string Name { get; }
+
+        /// <summary>The GLSL type the uniform must have. Used for link-time validation.</summary>
+        public abstract UniformType Datatype { get; }
+
+        /// <summary>Create a setter bound to the given uniform. Called once per shader at link time.</summary>
+        public abstract DrawAutomaticUniform Create(Uniform uniform);
+    }
+}
+```
+
+**Abstract base.**
+
+```csharp
+// Geode.Rendering/Uniforms/DrawAutomaticUniform.cs
+
+namespace Geode.Rendering.Uniforms
+{
+    /// <summary>
+    /// A setter invoked before every draw that pushes a scene-derived value
+    /// into its captured <see cref="Uniform{T}"/>. The Value assignment flows
+    /// through the dirty-list mechanism, so the GPU upload happens only if the
+    /// value actually changed since the last draw.
+    /// </summary>
+    public abstract class DrawAutomaticUniform
+    {
+        /// <summary>Read from SceneState / DrawState and write to the captured Uniform{T}.Value.</summary>
+        public abstract void Set(RenderContext context, DrawState drawState, SceneState sceneState);
+    }
+}
+```
+
+**Concrete template.** Every draw-automatic has the same shape: hold a typed `Uniform<T>`, in `Set` read from scene, assign to `.Value`.
+
+```csharp
+// Geode.Rendering/Uniforms/DrawAutomaticUniforms/ModelViewPerspectiveMatrixUniform.cs
+
+using System.Numerics;
+
+namespace Geode.Rendering.Uniforms.DrawAutomaticUniforms
+{
+    public sealed class ModelViewPerspectiveMatrixUniformFactory : DrawAutomaticUniformFactory
+    {
+        public override string Name => "og_modelViewPerspectiveMatrix";
+        public override UniformType Datatype => UniformType.FloatMatrix44;
+        public override DrawAutomaticUniform Create(Uniform uniform) =>
+            new ModelViewPerspectiveMatrixUniform((Uniform<Matrix4x4>)uniform);
+    }
+
+    internal sealed class ModelViewPerspectiveMatrixUniform : DrawAutomaticUniform
+    {
+        private readonly Uniform<Matrix4x4> _uniform;
+
+        public ModelViewPerspectiveMatrixUniform(Uniform<Matrix4x4> uniform) { _uniform = uniform; }
+
+        public override void Set(RenderContext ctx, DrawState ds, SceneState ss)
+        {
+            _uniform.Value = ss.ModelViewPerspectiveMatrix;
+        }
+    }
+}
+```
+
+**The full set** mirrors Book Table 3.1. Every row below is one file in `Uniforms/DrawAutomaticUniforms/` following the template above. Only the GLSL name, the `Uniform<T>` target type, and the value expression change.
+
+| GLSL name | Target | Value expression |
 |---|---|---|
-| `og_modelViewPerspectiveMatrix` | `mat4` | MVP matrix |
-| `og_viewMatrix` | `mat4` | View matrix |
-| `og_perspectiveMatrix` | `mat4` | Projection matrix |
-| `og_cameraEye` | `vec3` | Camera position (float) |
-| `og_cameraEyeHigh` | `vec3` | Camera position (high float for DSFP) |
-| `og_cameraEyeLow` | `vec3` | Camera position (low float for DSFP) |
-| `og_sunPosition` | `vec3` | Sun position |
-| `og_sunDirectionEC` | `vec3` | Sun direction in eye coordinates |
-| `og_diffuseSpecularAmbientShininess` | `vec4` | Material parameters |
-| `og_modelZToClipCoordinates` | `mat42` | For logarithmic depth |
-| `og_viewport` | `vec4` | Viewport dimensions |
-| `og_inverseViewport` | `vec4` | 1/viewport dimensions |
-| `og_windowToWorldNearPlane` | `mat4` | For unprojecting screen coords |
-| `og_perspectiveNearPlaneDistance` | `float` | Near plane distance |
-| `og_perspectiveFarPlaneDistance` | `float` | Far plane distance |
-| `og_normalMatrix` | `mat3` | Inverse-transpose of model-view |
-| `og_cameraLightPosition` | `vec3` | Light at camera position |
-| `og_highResolutionSnapScale` | `float` | For sub-pixel precision |
-| `og_pixelSizePerDistance` | `float` | Screen-space LOD metric |
-| `og_wgs84Height` | `float` | Camera height above WGS84 |
+| `og_modelViewPerspectiveMatrix` | `Uniform<Matrix4x4>` | `ss.ModelViewPerspectiveMatrix` |
+| `og_viewMatrix` | `Uniform<Matrix4x4>` | `ss.ViewMatrix` |
+| `og_perspectiveMatrix` | `Uniform<Matrix4x4>` | `ss.PerspectiveMatrix` |
+| `og_modelMatrix` | `Uniform<Matrix4x4>` | `ss.ModelMatrix` |
+| `og_normalMatrix` | `Uniform<Matrix3x3>` | `ss.NormalMatrix` |
+| `og_cameraEye` | `Uniform<Vector3>` | `ss.CameraEyeFloat` |
+| `og_cameraLightPosition` | `Uniform<Vector3>` | `ss.CameraLightPosition` |
+| `og_sunPosition` | `Uniform<Vector3>` | `ss.SunPositionFloat` |
+| `og_diffuseSpecularAmbientShininess` | `Uniform<Vector4>` | `ss.DiffuseSpecularAmbientShininess` |
+| `og_viewport` | `Uniform<Vector4>` | `ss.Viewport` |
+| `og_inverseViewport` | `Uniform<Vector4>` | `ss.InverseViewport` |
+| `og_pixelSizePerDistance` | `Uniform<float>` | `ss.PixelSizePerDistance` |
+| `og_wgs84Height` | `Uniform<float>` | `(float)ss.Camera.Height(Ellipsoid.Wgs84)` |
+| `og_perspectiveNearPlaneDistance` | `Uniform<float>` | `(float)ss.Camera.NearPlane` |
+| `og_perspectiveFarPlaneDistance` | `Uniform<float>` | `(float)ss.Camera.FarPlane` |
+| `og_highResolutionSnapScale` | `Uniform<float>` | `ss.HighResolutionSnapScale` |
 
-### Our Simplified Approach
+Some of these (`CameraLightPosition`, `Viewport`, `InverseViewport`, `NormalMatrix`, `PixelSizePerDistance`, `HighResolutionSnapScale`) require matching properties on `SceneState`. Add them as you wire up the corresponding factory.
 
-In Geode, we skip the factory/reflection pattern and set a fixed set of uniforms in `RenderContext.SetSceneUniforms()`. If a shader does not use a particular uniform, the `SetMat4`/`SetVec3` call targets location -1, which is a no-op. This is simpler and sufficient until we need the full automatic system.
+**Deferred to later sections:**
 
-Our current uniform set:
+| Section | Added |
+|---|---|
+| §27 (RTE/DSFP) | `og_cameraEyeHigh`, `og_cameraEyeLow` |
+| §28 (log depth) | `og_modelZToClipCoordinates` |
 
-| Uniform | Type | Set By |
-|---|---|---|
-| `uMVP` | `mat4` | `SceneState.ModelViewPerspectiveMatrix` |
-| `uView` | `mat4` | `SceneState.ViewMatrix` |
-| `uProjection` | `mat4` | `SceneState.PerspectiveMatrix` |
-| `uCameraEye` | `vec3` | `SceneState.CameraEyeFloat` |
-| `uSunPosition` | `vec3` | `SceneState.SunPosition` (cast to float) |
-| `uDiffuseSpecularAmbientShininess` | `vec4` | `SceneState.DiffuseSpecularAmbientShininess` |
+### Tier 3: `AutomaticUniformFactoryCollection` (the registry)
 
-When we add DSFP transforms (Section 27), we will add `uCameraEyeHigh` and `uCameraEyeLow`. When we add logarithmic depth (Section 28), we will add `uLogDepthC`. The fixed-set approach scales well enough for our needs.
+Lives on the `Device` in OpenGlobe. Geode doesn't have a Device type today -- its functionality is split between `RenderContext` (context-bound state) and a small static holder for context-shareable registries. The automatic-uniform registry is shareable; keep it in a static class.
 
-### Built-In GLSL Constants
+```csharp
+// Geode.Rendering/Uniforms/AutomaticUniformFactoryCollection.cs
 
-OpenGlobe also defines built-in constants via a preamble injected into every shader:
+using System.Collections.Generic;
+using Geode.Rendering.Uniforms.DrawAutomaticUniforms;
+using Geode.Rendering.Uniforms.LinkAutomaticUniforms;
+
+namespace Geode.Rendering.Uniforms
+{
+    /// <summary>
+    /// Process-wide registry of link-automatic uniforms and draw-automatic factories.
+    /// Populated at first access; consulted by ShaderProgram at link time.
+    /// </summary>
+    public static class AutomaticUniformFactoryCollection
+    {
+        private static readonly Dictionary<string, LinkAutomaticUniform> _link = new();
+        private static readonly Dictionary<string, DrawAutomaticUniformFactory> _draw = new();
+
+        static AutomaticUniformFactoryCollection()
+        {
+            // --- Link-automatic uniforms (set once at link) -----------------
+
+            // og_texture0..og_texture7 -> texture units 0..7
+            for (int i = 0; i < 8; i++)
+                RegisterLink(new TextureUniform(i));
+
+            // --- Draw-automatic factories (set before every draw) ------------
+
+            // Transforms
+            RegisterDraw(new ModelViewPerspectiveMatrixUniformFactory());
+            RegisterDraw(new ViewMatrixUniformFactory());
+            RegisterDraw(new PerspectiveMatrixUniformFactory());
+            RegisterDraw(new ModelMatrixUniformFactory());
+            RegisterDraw(new NormalMatrixUniformFactory());
+
+            // Camera / lighting
+            RegisterDraw(new CameraEyeUniformFactory());
+            RegisterDraw(new CameraLightPositionUniformFactory());
+            RegisterDraw(new SunPositionUniformFactory());
+            RegisterDraw(new DiffuseSpecularAmbientShininessUniformFactory());
+
+            // Viewport / screen-space
+            RegisterDraw(new ViewportUniformFactory());
+            RegisterDraw(new InverseViewportUniformFactory());
+            RegisterDraw(new PixelSizePerDistanceUniformFactory());
+
+            // WGS84 camera height (for LOD selection on the globe)
+            RegisterDraw(new Wgs84HeightUniformFactory());
+
+            // Near/far planes (for depth buffer math)
+            RegisterDraw(new PerspectiveNearPlaneDistanceUniformFactory());
+            RegisterDraw(new PerspectiveFarPlaneDistanceUniformFactory());
+
+            // DSFP RTE (Section 27 populates)
+            // DSFP log depth (Section 28 populates)
+        }
+
+        public static void RegisterLink(LinkAutomaticUniform u) => _link[u.Name] = u;
+        public static void RegisterDraw(DrawAutomaticUniformFactory f) => _draw[f.Name] = f;
+
+        public static bool TryGetLink(string name, out LinkAutomaticUniform? u) => _link.TryGetValue(name, out u);
+        public static bool TryGetDrawFactory(string name, out DrawAutomaticUniformFactory? f) => _draw.TryGetValue(name, out f);
+    }
+}
+```
+
+### ShaderProgram integration
+
+`ShaderProgram` becomes the orchestrator. Changes to Section 11's class:
+
+1. Implement `ICleanableObserver`.
+2. Add `Uniforms` (a `UniformCollection`), `_dirtyUniforms` (a `List<ICleanable>`), and `_drawAutomaticUniforms` (a `List<DrawAutomaticUniform>`).
+3. After link, call `InitializeUniforms()` to scan active uniforms and build the collection.
+4. Then call `InitializeAutomaticUniforms()` to handle link-automatics and populate `_drawAutomaticUniforms`.
+5. Expose `Clean()` and `Bind(ctx, ds, ss)` for `RenderContext` to call instead of `Use()`.
+
+**New fields + observer callback:**
+
+```csharp
+// Additions inside ShaderProgram:
+
+private readonly UniformCollection _uniforms = new();
+private readonly List<ICleanable> _dirtyUniforms = new();
+private readonly List<DrawAutomaticUniform> _drawAutomaticUniforms = new();
+
+public UniformCollection Uniforms => _uniforms;
+
+// Called by Uniform<T>.Value setter when the cached value changes.
+void ICleanableObserver.NotifyDirty(ICleanable cleanable) => _dirtyUniforms.Add(cleanable);
+```
+
+**`InitializeUniforms` (scan active uniforms, dispatch on type):**
+
+```csharp
+private void InitializeUniforms()
+{
+    _gl.GetProgram(_handle, ProgramPropertyARB.ActiveUniforms, out int count);
+    _gl.GetProgram(_handle, ProgramPropertyARB.ActiveUniformMaxLength, out int maxNameLength);
+
+    for (uint i = 0; i < (uint)count; i++)
+    {
+        _gl.GetActiveUniform(_handle, i, (uint)maxNameLength, out _, out _,
+            out Silk.NET.OpenGL.UniformType glType, out string name);
+
+        // Strip "[0]" suffix that GLSL compilers append to array uniforms.
+        int bracket = name.IndexOf('[');
+        if (bracket >= 0) name = name.Substring(0, bracket);
+
+        int location = _gl.GetUniformLocation(_handle, name);
+        if (location < 0) continue;  // optimized out by the driver -- skip
+
+        // Dispatch on GLSL type to the right concrete Uniform subclass.
+        UniformType type = (UniformType)glType;
+        Uniform uniform = CreateConcreteUniform(type, name, location);
+        _uniforms.Add(uniform);
+    }
+}
+
+private Uniform CreateConcreteUniform(UniformType type, string name, int location)
+{
+    return type switch
+    {
+        UniformType.Float         => new UniformFloatGL(_gl, _handle, name, location, this),
+        UniformType.FloatVector2  => new UniformFloatVector2GL(_gl, _handle, name, location, this),
+        UniformType.FloatVector3  => new UniformFloatVector3GL(_gl, _handle, name, location, this),
+        UniformType.FloatVector4  => new UniformFloatVector4GL(_gl, _handle, name, location, this),
+        UniformType.FloatMatrix33 => new UniformFloatMatrix33GL(_gl, _handle, name, location, this),
+        UniformType.FloatMatrix44 => new UniformFloatMatrix44GL(_gl, _handle, name, location, this),
+        UniformType.Int or UniformType.Sampler1D or UniformType.Sampler2D
+            or UniformType.Sampler3D or UniformType.SamplerCube
+            or UniformType.Sampler2DArray or UniformType.Sampler2DShadow
+            => new UniformIntGL(_gl, _handle, name, location, this),
+        UniformType.Bool          => new UniformBoolGL(_gl, _handle, name, location, this),
+        _ => throw new NotSupportedException($"Uniform type {type} for '{name}' is not yet wired up.")
+    };
+}
+```
+
+**`InitializeAutomaticUniforms` (consult the registry):**
+
+```csharp
+private void InitializeAutomaticUniforms()
+{
+    foreach (Uniform uniform in _uniforms)
+    {
+        // Link-automatic first -- set once here, never again.
+        if (AutomaticUniformFactoryCollection.TryGetLink(uniform.Name, out LinkAutomaticUniform? linkAuto))
+        {
+            if (linkAuto!.Datatype != uniform.Datatype)
+                throw new Exception($"Shader declares '{uniform.Name}' as {uniform.Datatype}, " +
+                                    $"but the engine expects {linkAuto.Datatype}.");
+            linkAuto.Set(uniform);
+            continue;
+        }
+
+        // Draw-automatic: build and store the setter.
+        if (AutomaticUniformFactoryCollection.TryGetDrawFactory(uniform.Name, out DrawAutomaticUniformFactory? drawFactory))
+        {
+            if (drawFactory!.Datatype != uniform.Datatype)
+                throw new Exception($"Shader declares '{uniform.Name}' as {uniform.Datatype}, " +
+                                    $"but the engine expects {drawFactory.Datatype}.");
+            _drawAutomaticUniforms.Add(drawFactory.Create(uniform));
+        }
+    }
+}
+```
+
+**`Bind` (called by RenderContext):**
+
+```csharp
+public void Bind(RenderContext ctx, DrawState drawState, SceneState sceneState)
+{
+    _gl.UseProgram(_handle);
+
+    // 1. Pull draw-automatic values from the scene. Each Set(...) writes into
+    //    a Uniform<T>.Value, which dirties the uniform if the value changed.
+    foreach (DrawAutomaticUniform auto in _drawAutomaticUniforms)
+        auto.Set(ctx, drawState, sceneState);
+
+    // 2. Flush every dirty uniform (manual + automatic) to the GPU.
+    Clean();
+}
+
+/// <summary>Upload all dirty uniforms to the GPU. Called by Bind; exposed for tests.</summary>
+public void Clean()
+{
+    foreach (ICleanable c in _dirtyUniforms)
+        c.Clean();
+    _dirtyUniforms.Clear();
+}
+```
+
+**Constructor: call order.**
+
+```csharp
+// At the end of the constructor, after shader objects are detached/deleted:
+InitializeUniforms();
+InitializeAutomaticUniforms();
+```
+
+**The typed `SetInt/SetFloat/SetVec3/SetVec4/SetMat4` helpers from Section 11 stay, but their implementations change.** Each is now a one-line shortcut for `((Uniform<T>)Uniforms[name]).Value = value;` -- i.e., they route through the typed collection and the dirty list. They do **not** bypass dirtying the way the pre-rewrite helpers did (`glUniform*` on every call, no caching). Client code can use whichever is more convenient:
+
+```csharp
+// These are equivalent. Both set the value through Uniform<T>.Value,
+// dirty the uniform if the value changed, and defer the GPU upload
+// to the next ShaderProgram.Bind() -> Clean() cycle.
+shader.SetMat4("u_modelMatrix", m);
+((Uniform<Matrix4x4>)shader.Uniforms["u_modelMatrix"]).Value = m;
+```
+
+### RenderContext integration
+
+`Draw` becomes trivial -- apply state, hand off to the program:
+
+```csharp
+public void Draw(PrimitiveType primitiveType, DrawState drawState, SceneState sceneState)
+{
+    ApplyRenderState(drawState.RenderState);
+    drawState.ShaderProgram.Bind(this, drawState, sceneState);
+    _gl.BindVertexArray(drawState.VertexArrayObject.Handle);
+
+    _gl.DrawElements(primitiveType,
+        (uint)drawState.VertexArrayObject.IndexCount,
+        DrawElementsType.UnsignedInt, default);
+}
+```
+
+Same shape for `DrawArrays`. The whole uniform-upload pipeline is invisible at this layer.
+
+### Naming convention (book-faithful)
+
+This guide uses **`og_` for every automatic uniform** -- both link and draw. Manual per-draw uniforms use `u_` or no prefix. The registry is the source of truth, but the prefix gives shader authors a visual signal at a glance.
+
+### Three-step recipe: adding a new draw-automatic uniform
+
+1. Add a property to `SceneState` exposing the value.
+2. Add two classes to `DrawAutomaticUniforms/`: the factory (`MyThingUniformFactory`) and the setter (`MyThingUniform`), following the template.
+3. Register the factory in `AutomaticUniformFactoryCollection`'s static constructor.
+
+Any shader that declares `uniform <type> og_myThing;` now picks the value up for free. Nothing else changes.
+
+### Built-in GLSL constants (not injected)
+
+OpenGlobe prepends every shader with constants like:
 
 ```glsl
-const float og_pi       = 3.14159265358979323846;
-const float og_halfPi   = 1.57079632679489661923;
-const float og_twoPi    = 6.28318530717958647693;
-const float og_oneOverPi = 0.31830988618379067154;
+const float og_pi           = 3.14159265358979323846;
+const float og_halfPi       = 1.57079632679489661923;
+const float og_twoPi        = 6.28318530717958647693;
+const float og_oneOverPi    = 0.31830988618379067154;
 const float og_oneOverTwoPi = 0.15915494309189533577;
-const float og_e        = 2.71828182845904523536;
+const float og_e            = 2.71828182845904523536;
 ```
 
-We do not inject these automatically. If a shader needs pi, it uses the GLSL `radians(180.0)` or defines a local constant. This keeps our shader pipeline simple.
+Geode does not yet inject these. Shaders that need pi use `radians(180.0)` or declare a local constant. If you add preamble injection later, the hook is `ShaderProgram`'s constructor -- prepend to `vertexSource`/`fragmentSource` before `CompileShader`, preserving `#version 460 core` as the first non-comment line.
 
 ---
 
-## Section 20: Step 1 -- Window, Context, Render Loop, and Drawing a Triangle
+## Section 19.5: Framebuffers
 
-*Corresponds to Book Chapter 3, Section 3.11*
+*Corresponds to Book Chapter 3, Section 3.7*
+
+*OpenGlobe source: `Source/Renderer/Framebuffer.cs`, `Source/Renderer/ColorAttachments.cs`, `Source/Renderer/GL3x/FramebufferGL3x.cs`.*
+
+*Files we build in this section:*
+
+```
+Geode.Rendering/
+  Framebuffer.cs           -- the FBO wrapper
+  ColorAttachments.cs      -- indexable collection of color slots
+  TextureFormatFlags.cs    -- extension properties: ColorRenderable, DepthRenderable, etc.
+```
+
+Plus a `Description` property added to `Texture2D`.
+
+Until now every draw call has written to the **default framebuffer** -- the one the window system provides. That framebuffer shows up on the screen. Many effects require writing to an **off-screen** target instead: a color buffer you sample in a later pass, a depth buffer you read for screen-space techniques, multiple color buffers written simultaneously for deferred shading. The abstraction for all of this is a **Framebuffer Object (FBO)**.
+
+### What the book covers
+
+Per Book §3.7, a framebuffer owns three attachment slots:
+
+- **`ColorAttachments`** -- indexable collection, `framebuffer.ColorAttachments[index] = texture`. Up to `glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS)` slots (typically 8). Each attachment is a `Texture2D` whose format must be color-renderable (e.g. `Rgba8`, `Rgba16f`).
+- **`DepthAttachment`** -- single slot. `Texture2D` with a depth-renderable format (`Depth24`, `Depth32f`).
+- **`DepthStencilAttachment`** -- single slot. `Texture2D` with a depth-stencil format (`Depth24Stencil8`). Mutually exclusive with a separate depth attachment.
+
+Framebuffers are not shareable across GL contexts -- so in OpenGlobe they live on `Context`, not `Device`. In Geode the `RenderContext` owns the current framebuffer: assigning `RenderContext.Framebuffer = fb` makes it current; assigning `null` restores the default window framebuffer.
+
+The book highlights four rules a good wrapper enforces at API boundary rather than letting GL surface them as opaque errors:
+
+1. **Depth-required rule.** If `RenderState.DepthTest.Enabled` and the current framebuffer has no depth attachment, throw before the draw. Common beginner bug.
+2. **Texture-format compatibility.** Reject an attachment whose format is not renderable for its slot. A `Depth24` texture cannot be a color attachment; an `Rgba8` texture cannot be a depth attachment. `Texture2DDescription` carries `ColorRenderable`, `DepthRenderable`, `DepthStencilRenderable` flags computed from the internal format.
+3. **Fragment-output binding.** When a fragment shader declares `out vec4 dayColor; out vec4 nightColor;`, the binding of names to color-attachment indices is determined by `glGetFragDataLocation`. Write `framebuffer.ColorAttachments[shader.FragmentOutputs["dayColor"]] = dayTexture` so the binding is named, not positional. This is why Section 11's `ShaderProgram` exposes a `FragmentOutputs` collection.
+4. **Delayed attachment binding.** Assigning to `ColorAttachments[i]` or `DepthAttachment` does *not* call `glNamedFramebufferTexture` immediately. Instead it marks the slot dirty. The FBO flushes pending attachment changes (plus `glNamedFramebufferDrawBuffers` updates for the draw-buffer mask) on its next `Bind()`. This matches the dirty-list pattern used for uniforms.
+
+### Texture2D description + format flags
+
+`Framebuffer` needs to inspect a texture's format to decide whether it can be used as a color, depth, or depth-stencil attachment. That requires `Texture2D` to carry its description.
+
+**Extend `Texture2D` (Section 13):**
+
+```csharp
+// Additions to Texture2D:
+
+public Texture2DDescription Description { get; }
+
+public Texture2D(GL gl, Texture2DDescription description)
+{
+    Description = description;
+    // ... existing DSA creation logic using description.Width, Height, InternalFormat ...
+}
+
+public readonly record struct Texture2DDescription(
+    int Width,
+    int Height,
+    InternalFormat InternalFormat,
+    bool GenerateMipmaps = false);
+```
+
+**New `TextureFormatFlags`** -- extension methods that answer "can this format be attached as X?":
+
+```csharp
+// Geode.Rendering/TextureFormatFlags.cs
+
+using Silk.NET.OpenGL;
+
+namespace Geode.Rendering
+{
+    /// <summary>
+    /// Per-format capability flags used to validate framebuffer attachments.
+    /// These follow the rules in the OpenGL 4.6 specification, Table 8.12
+    /// (Framebuffer-attachable internal formats).
+    /// </summary>
+    public static class TextureFormatFlags
+    {
+        public static bool IsColorRenderable(this InternalFormat f) => f switch
+        {
+            InternalFormat.R8 or InternalFormat.R16 or InternalFormat.R16f or InternalFormat.R32f
+                or InternalFormat.Rg8 or InternalFormat.Rg16 or InternalFormat.Rg16f or InternalFormat.Rg32f
+                or InternalFormat.Rgb8 or InternalFormat.Rgb16 or InternalFormat.Rgb16f or InternalFormat.Rgb32f
+                or InternalFormat.Rgba8 or InternalFormat.Rgba16 or InternalFormat.Rgba16f or InternalFormat.Rgba32f
+                or InternalFormat.Srgb8 or InternalFormat.Srgb8Alpha8 => true,
+            _ => false
+        };
+
+        public static bool IsDepthRenderable(this InternalFormat f) => f switch
+        {
+            InternalFormat.DepthComponent16 or InternalFormat.DepthComponent24
+                or InternalFormat.DepthComponent32 or InternalFormat.DepthComponent32f => true,
+            _ => false
+        };
+
+        public static bool IsDepthStencilRenderable(this InternalFormat f) => f switch
+        {
+            InternalFormat.Depth24Stencil8 or InternalFormat.Depth32fStencil8 => true,
+            _ => false
+        };
+    }
+}
+```
+
+### ColorAttachments collection
+
+The indexable wrapper the book uses, so you can write:
+
+```csharp
+framebuffer.ColorAttachments[shader.FragmentOutputs["dayColor"]] = dayTexture;
+framebuffer.ColorAttachments[shader.FragmentOutputs["nightColor"]] = nightTexture;
+```
+
+```csharp
+// Geode.Rendering/ColorAttachments.cs
+
+using System;
+
+namespace Geode.Rendering
+{
+    /// <summary>
+    /// Ordered, indexable collection of color attachments for a <see cref="Framebuffer"/>.
+    /// Assignments are deferred: they mark the slot dirty, and the framebuffer
+    /// flushes pending changes on its next Bind().
+    /// </summary>
+    public sealed class ColorAttachments
+    {
+        internal readonly Texture2D?[] Slots;
+        internal bool Dirty;
+
+        internal ColorAttachments(int maxColorAttachments)
+        {
+            Slots = new Texture2D?[maxColorAttachments];
+        }
+
+        /// <summary>The maximum number of slots. Equal to the `maxColorAttachments` passed to Framebuffer.</summary>
+        public int Count => Slots.Length;
+
+        /// <summary>
+        /// Get or set the Texture2D at the given color attachment index.
+        /// Setting null detaches. Setting a non-null texture validates that its
+        /// internal format is color-renderable.
+        /// </summary>
+        public Texture2D? this[int index]
+        {
+            get => Slots[index];
+            set
+            {
+                if (index < 0 || index >= Slots.Length)
+                    throw new ArgumentOutOfRangeException(nameof(index));
+
+                if (value is not null && !value.Description.InternalFormat.IsColorRenderable())
+                    throw new InvalidOperationException(
+                        $"Texture format {value.Description.InternalFormat} is not color-renderable.");
+
+                if (Slots[index] == value) return;
+                Slots[index] = value;
+                Dirty = true;
+            }
+        }
+    }
+}
+```
+
+### Framebuffer
+
+Uses OpenGL 4.6 DSA throughout. Attachment changes are queued; the next `Bind()` flushes them.
+
+```csharp
+// Geode.Rendering/Framebuffer.cs
+//
+// Off-screen render target. Owns ColorAttachments, DepthAttachment,
+// DepthStencilAttachment. Validates attachment formats at assignment time
+// and flushes pending GL attachment calls on Bind().
+//
+// DSA throughout: glCreateFramebuffers, glNamedFramebufferTexture,
+// glNamedFramebufferDrawBuffers, glCheckNamedFramebufferStatus.
+
+using Silk.NET.OpenGL;
+using System;
+
+namespace Geode.Rendering
+{
+    public sealed class Framebuffer : IDisposable
+    {
+        private readonly GL _gl;
+        private readonly uint _handle;
+
+        private Texture2D? _depthAttachment;
+        private bool _depthDirty;
+
+        private Texture2D? _depthStencilAttachment;
+        private bool _depthStencilDirty;
+
+        public uint Handle => _handle;
+        public int Width { get; }
+        public int Height { get; }
+
+        /// <summary>Indexable color attachments. Assigning dirties; Bind flushes.</summary>
+        public ColorAttachments ColorAttachments { get; }
+
+        /// <summary>Single depth attachment. Incompatible with <see cref="DepthStencilAttachment"/>.</summary>
+        public Texture2D? DepthAttachment
+        {
+            get => _depthAttachment;
+            set
+            {
+                if (value is not null)
+                {
+                    if (_depthStencilAttachment is not null)
+                        throw new InvalidOperationException("Framebuffer already has a depth-stencil attachment.");
+                    if (!value.Description.InternalFormat.IsDepthRenderable())
+                        throw new InvalidOperationException(
+                            $"Texture format {value.Description.InternalFormat} is not depth-renderable.");
+                }
+                if (_depthAttachment == value) return;
+                _depthAttachment = value;
+                _depthDirty = true;
+            }
+        }
+
+        /// <summary>Combined depth-stencil attachment. Incompatible with <see cref="DepthAttachment"/>.</summary>
+        public Texture2D? DepthStencilAttachment
+        {
+            get => _depthStencilAttachment;
+            set
+            {
+                if (value is not null)
+                {
+                    if (_depthAttachment is not null)
+                        throw new InvalidOperationException("Framebuffer already has a separate depth attachment.");
+                    if (!value.Description.InternalFormat.IsDepthStencilRenderable())
+                        throw new InvalidOperationException(
+                            $"Texture format {value.Description.InternalFormat} is not depth-stencil-renderable.");
+                }
+                if (_depthStencilAttachment == value) return;
+                _depthStencilAttachment = value;
+                _depthStencilDirty = true;
+            }
+        }
+
+        /// <summary>True if this framebuffer has any depth attachment (either DepthAttachment or DepthStencilAttachment).</summary>
+        public bool HasDepthAttachment => _depthAttachment is not null || _depthStencilAttachment is not null;
+
+        public Framebuffer(GL gl, int width, int height, int maxColorAttachments = 1)
+        {
+            if (maxColorAttachments < 1 || maxColorAttachments > 8)
+                throw new ArgumentOutOfRangeException(nameof(maxColorAttachments), "must be 1-8");
+
+            _gl = gl;
+            Width = width;
+            Height = height;
+            ColorAttachments = new ColorAttachments(maxColorAttachments);
+            _handle = _gl.CreateFramebuffer();
+        }
+
+        /// <summary>
+        /// Make this framebuffer the active draw target, flushing any pending
+        /// attachment changes first. Called by RenderContext's Framebuffer setter.
+        /// </summary>
+        internal void Bind()
+        {
+            Clean();
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, _handle);
+        }
+
+        /// <summary>
+        /// Flush pending attachment changes. Called by Bind; exposed for Validate().
+        /// </summary>
+        public void Clean()
+        {
+            // Color attachments
+            if (ColorAttachments.Dirty)
+            {
+                for (int i = 0; i < ColorAttachments.Slots.Length; i++)
+                {
+                    Texture2D? tex = ColorAttachments.Slots[i];
+                    _gl.NamedFramebufferTexture(_handle,
+                        FramebufferAttachment.ColorAttachment0 + i,
+                        tex?.Handle ?? 0, 0);
+                }
+                UpdateDrawBuffers();
+                ColorAttachments.Dirty = false;
+            }
+
+            if (_depthDirty)
+            {
+                _gl.NamedFramebufferTexture(_handle, FramebufferAttachment.DepthAttachment,
+                    _depthAttachment?.Handle ?? 0, 0);
+                _depthDirty = false;
+            }
+
+            if (_depthStencilDirty)
+            {
+                _gl.NamedFramebufferTexture(_handle, FramebufferAttachment.DepthStencilAttachment,
+                    _depthStencilAttachment?.Handle ?? 0, 0);
+                _depthStencilDirty = false;
+            }
+        }
+
+        /// <summary>
+        /// Flush pending changes and verify the framebuffer is complete.
+        /// Throws if GL reports any incompleteness.
+        /// </summary>
+        public void Validate()
+        {
+            Clean();
+            GLEnum status = _gl.CheckNamedFramebufferStatus(_handle, FramebufferTarget.Framebuffer);
+            if (status != GLEnum.FramebufferComplete)
+                throw new Exception($"Framebuffer is incomplete: {status}");
+        }
+
+        private unsafe void UpdateDrawBuffers()
+        {
+            int count = ColorAttachments.Slots.Length;
+            Span<GLEnum> bufs = stackalloc GLEnum[count];
+            int trailingNoneStart = count;
+
+            for (int i = 0; i < count; i++)
+                bufs[i] = ColorAttachments.Slots[i] is not null ? GLEnum.ColorAttachment0 + i : GLEnum.None;
+
+            // Strip trailing Nones so we don't tell GL about slots we don't care about.
+            while (trailingNoneStart > 0 && bufs[trailingNoneStart - 1] == GLEnum.None) trailingNoneStart--;
+
+            if (trailingNoneStart == 0)
+            {
+                _gl.NamedFramebufferDrawBuffer(_handle, DrawBufferMode.None);
+                return;
+            }
+
+            fixed (GLEnum* p = bufs)
+                _gl.NamedFramebufferDrawBuffers(_handle, (uint)trailingNoneStart, p);
+        }
+
+        public void Dispose() => _gl.DeleteFramebuffer(_handle);
+    }
+}
+```
+
+### RenderContext integration
+
+`RenderContext` owns the "currently bound framebuffer" state. A setter does the bind (which flushes pending attachments first).
+
+```csharp
+// Additions to RenderContext:
+
+private Framebuffer? _currentFramebuffer;
+
+/// <summary>
+/// The currently bound framebuffer. Null = default (window) framebuffer.
+/// Assignment flushes pending attachment changes and binds.
+/// </summary>
+public Framebuffer? Framebuffer
+{
+    get => _currentFramebuffer;
+    set
+    {
+        _currentFramebuffer = value;
+        if (value is null)
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        else
+            value.Bind();
+    }
+}
+```
+
+And add the depth-required guard inside `Draw`:
+
+```csharp
+// Inside Draw, after ApplyRenderState:
+if (drawState.RenderState.DepthTest.Enabled
+    && _currentFramebuffer is not null
+    && !_currentFramebuffer.HasDepthAttachment)
+{
+    throw new InvalidOperationException(
+        "DepthTest is enabled but the current framebuffer has no depth attachment. " +
+        "Attach a Texture2D with a depth-renderable format (Depth24, Depth32f) or disable DepthTest.");
+}
+```
+
+### Example: multi-attachment render-to-texture (book-style)
+
+Two color attachments plus a depth attachment. Shader names drive the routing.
+
+```csharp
+// Fragment shader:
+//   out vec4 dayColor;
+//   out vec4 nightColor;
+
+Texture2D day   = new(gl, new Texture2DDescription(1920, 1080, InternalFormat.Rgba8));
+Texture2D night = new(gl, new Texture2DDescription(1920, 1080, InternalFormat.Rgba8));
+Texture2D depth = new(gl, new Texture2DDescription(1920, 1080, InternalFormat.DepthComponent32f));
+
+Framebuffer fbo = new(gl, 1920, 1080, maxColorAttachments: 2);
+fbo.ColorAttachments[shader.FragmentOutputs["dayColor"]]   = day;
+fbo.ColorAttachments[shader.FragmentOutputs["nightColor"]] = night;
+fbo.DepthAttachment = depth;
+fbo.Validate();
+
+renderContext.Framebuffer = fbo;
+renderContext.Clear(clearState);
+renderContext.Draw(primitiveType, drawState, sceneState);
+renderContext.Framebuffer = null;
+
+// day and night are now sampleable for a compositing pass
+```
+
+### Use cases we will encounter
+
+- **§25 GPU Ray-Casted Globe.** Off-screen depth target so `gl_FragDepth` writes are composited in a second pass.
+- **§26 Day/Night Globe.** Multiple color attachments for deferred shading (the example above).
+- **Post-processing.** Bloom, tone mapping, SSAO -- scene renders to a texture, a full-screen pass composites.
+- **High-resolution screen capture.** Render to a 4K or 8K FBO regardless of window size, read back via `glGetTextureImage`.
+
+### D3D parity note
+
+Book flags the D3D origin convention (Y-up in texture coords vs Y-down in pixel coords). A GL-only engine still hits it when saving FBO contents to disk -- the image is upside-down. Flip row order during `glReadPixels` or at save time. Document the flip in any future `Framebuffer.SaveToPng(path)` helper.
+
+---
+
+## Section 20: Window, Context, Render Loop, and Drawing a Triangle
+
+*Corresponds to Book Chapter 3, Section 3.8: "Putting It All Together: Rendering a Triangle"*
 
 This is the payoff section. We bring together every type defined in Part III into a working application that opens a window, creates a rendering context, and draws a colored triangle.
 
@@ -4187,12 +5458,13 @@ layout(location = 1) in vec3 aColor;
 // Output to fragment shader (interpolated by rasterizer)
 out vec3 vColor;
 
-// Scene uniforms (set by RenderContext.SetSceneUniforms)
-uniform mat4 uMVP;
+// Automatic uniform -- set by the engine before every draw (Section 19).
+// Declaring it by name is enough; no call-site setup required.
+uniform mat4 og_modelViewPerspectiveMatrix;
 
 void main()
 {
-    gl_Position = uMVP * vec4(aPosition, 1.0);
+    gl_Position = og_modelViewPerspectiveMatrix * vec4(aPosition, 1.0);
     vColor = aColor;
 }
 ```
@@ -4422,7 +5694,7 @@ This simple triangle validates the entire rendering pipeline:
 2. **VertexArrayObject** correctly set up the vertex format -- the GPU found the position and color attributes at the right locations and strides.
 3. **BufferObject** uploaded vertex and index data to the GPU via DSA.
 4. **DrawState** bundled the render state, shader, and VAO.
-5. **RenderContext** applied the render state, set the scene uniforms (MVP matrix), bound the shader and VAO, and issued `glDrawElements`.
+5. **RenderContext** applied the render state, called `drawState.ShaderProgram.Bind(...)` (which runs every `DrawAutomaticUniform`, dirties those that changed, then flushes the dirty list with `glProgramUniform*`), bound the VAO, and issued `glDrawElements`.
 6. **SceneState** computed the view and projection matrices in double precision and converted them to float for GPU upload.
 7. **ClearState** cleared the framebuffer to the correct color.
 
@@ -4431,6 +5703,51 @@ Every class in `Geode.Rendering` was exercised. The renderer works.
 ### Next Steps
 
 Part IV will replace this triangle with a tessellated ellipsoid -- the actual globe. The `SceneState` camera will be positioned at a realistic altitude above the WGS84 surface, and the shaders will compute per-pixel lighting using the geodetic surface normal. But the rendering pipeline -- `ClearState` -> `DrawState` -> `RenderContext.Draw()` -- remains exactly the same. That is the power of the abstraction.
+
+---
+
+## Section 20.5: Resources
+
+*Corresponds to Book Chapter 3, Section 3.9: "Resources"*
+
+The book closes Chapter 3 with a reading list. Geode mirrors most of it and adds modern references specific to OpenGL 4.6 DSA and .NET.
+
+### Book-cited references (still authoritative)
+
+- **Wright, Haemel, Sellers, Lipchak.** *OpenGL SuperBible* -- the 7th edition covers OpenGL 4.5 DSA throughout, which is what Geode uses. Best single book on the modern GL pipeline.
+- **Segal, Akeley.** *The OpenGL Graphics System: A Specification* -- the official Khronos spec. Download the 4.6 Core Profile PDF from [khronos.org/registry/OpenGL/specs/gl/glspec46.core.pdf](https://www.khronos.org/registry/OpenGL/specs/gl/glspec46.core.pdf). Read the sections relevant to your current work, not cover-to-cover.
+- **Rost, Licea-Kane.** *OpenGL Shading Language* (Orange Book) -- still the best GLSL reference for concept-level understanding. 3rd edition covers GLSL 1.50; for 4.60-specific features (compute shaders, SPIR-V) see the Khronos GLSL spec.
+- **Eberly.** *3D Game Engine Design* -- general engine architecture; complements this book's narrower focus. See also Eberly's *GPU Computing Gems* for the compute-shader material Geode will use in future LOD work.
+- **McReynolds, Blythe.** *Advanced Graphics Programming Using OpenGL* -- older (2005, fixed-function era) but many algorithmic techniques still relevant, especially for blending and stencil tricks.
+
+### Additions for OpenGL 4.6
+
+- **[learnopengl.com](https://learnopengl.com)** by Joey de Vries -- free, up-to-date, idiomatic modern GL. Read the "Getting Started" chapters even if you think you know GL; the 4.5 DSA examples in the later chapters show the DSA patterns Geode uses.
+- **[docs.gl](https://docs.gl)** -- per-function reference with a version selector. Faster than the Khronos wiki for quick lookups.
+- **Khronos OpenGL 4.6 Core Profile specification** -- cited above. Section 8 (Textures) and Section 9 (Framebuffer Objects) are required reading before extending Section 13 and Section 19.5.
+- **Nathan Reed, *Depth Precision Visualized*** -- [reedbeta.com/blog/depth-precision-visualized](https://www.reedbeta.com/blog/depth-precision-visualized/). The canonical explanation of reversed-Z depth buffers. Pair with Section 28 when you build it.
+- **Emil Persson (Humus), *A couple of notes about Z*** -- [humus.name/index.php?page=Comments&ID=255](http://www.humus.name/index.php?page=Comments&ID=255). Complements Reed's post with practical engine-integration notes.
+
+### Additions for Silk.NET and .NET
+
+- **[Silk.NET docs](https://dotnet.github.io/Silk.NET/)** and the [samples repository](https://github.com/dotnet/Silk.NET/tree/main/examples). The `OpenGL/Tutorial` samples show idiomatic DSA usage in C#.
+- **.NET `System.Numerics.Matrix4x4` row-major vs OpenGL column-major** -- understand the transpose convention before debugging matrix bugs. Silk.NET's `UniformMatrix4(location, count, transpose, data)` accepts either; pass `transpose=true` when handing it a `System.Numerics.Matrix4x4*`.
+
+### Production virtual globe references
+
+- **[Cesium source](https://github.com/CesiumGS/cesium)** -- Patrick Cozzi's follow-on to OpenGlobe. Production tile LOD, terrain quantization, imagery layer blending. The JavaScript is readable even if you don't plan to port it.
+- **[CesiumJS Architecture](https://cesium.com/learn/cesiumjs-learn/cesiumjs-architecture/)** -- overview of the runtime's scene graph, tile scheduler, and camera system.
+- **[Outerra blog](http://outerra.blogspot.com/)** by Brano Kemen -- the original logarithmic-depth articles the book cites, plus planet-scale rendering techniques not covered by the book (procedural terrain, atmospheric scattering at scale).
+
+### Math and graphics theory
+
+- **Eric Lengyel, *Foundations of Game Engine Development*** Vol. 1 (Mathematics) and Vol. 2 (Rendering) -- modern linear algebra treatment aligned with modern GPU pipelines. Strong on coordinate-system conventions and matrix derivations.
+- **Akenine-Moller, Haines, Hoffman, Pesce, Iwanicki, Hillaire.** *Real-Time Rendering* (4th ed.) -- encyclopedic reference for lighting, visibility, shadows. Chapters 4 (transforms) and 5 (shading basics) complement Book Ch 3; Chapter 7 (light and color) complements future globe shading work.
+
+### OpenGlobe source
+
+- **[virtualglobebook.com](http://virtualglobebook.com)** -- the book's companion website, with errata and the OpenGlobe source code.
+- **[OpenGlobe repository](https://github.com/virtualglobebook/OpenGlobe)** -- the C# reference implementation the book describes. MIT-licensed; useful to cross-reference when this guide's approach differs from the book's.
 
 ---
 
@@ -4960,11 +6277,11 @@ layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec3 a_normal;
 layout(location = 2) in vec2 a_texcoord;
 
-uniform mat4 u_modelViewProjection;
+uniform mat4 og_modelViewPerspectiveMatrix;
 
 void main()
 {
-    gl_Position = u_modelViewProjection * vec4(a_position, 1.0);
+    gl_Position = og_modelViewPerspectiveMatrix * vec4(a_position, 1.0);
 }
 ```
 
@@ -4999,7 +6316,7 @@ layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec3 a_normal;
 layout(location = 2) in vec2 a_texcoord;
 
-uniform mat4 u_modelViewProjection;
+uniform mat4 og_modelViewPerspectiveMatrix;
 uniform mat4 u_modelView;
 
 out vec3 v_normalEC;
@@ -5012,7 +6329,7 @@ void main()
     // For non-uniform scale, use the inverse-transpose instead.
     v_normalEC = mat3(u_modelView) * a_normal;
 
-    gl_Position = u_modelViewProjection * vec4(a_position, 1.0);
+    gl_Position = og_modelViewPerspectiveMatrix * vec4(a_position, 1.0);
 }
 ```
 
@@ -5049,7 +6366,7 @@ layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec3 a_normal;
 layout(location = 2) in vec2 a_texcoord;
 
-uniform mat4 u_modelViewProjection;
+uniform mat4 og_modelViewPerspectiveMatrix;
 uniform mat4 u_modelView;
 
 out vec3 v_positionEC;
@@ -5063,7 +6380,7 @@ void main()
     v_normalEC = mat3(u_modelView) * a_normal;
     v_texcoord = a_texcoord;
 
-    gl_Position = u_modelViewProjection * vec4(a_position, 1.0);
+    gl_Position = og_modelViewPerspectiveMatrix * vec4(a_position, 1.0);
 }
 ```
 
@@ -5143,7 +6460,7 @@ layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec3 a_normal;
 layout(location = 2) in vec2 a_texcoord;
 
-uniform mat4 u_modelViewProjection;
+uniform mat4 og_modelViewPerspectiveMatrix;
 uniform mat4 u_modelView;
 
 out vec3 v_positionEC;
@@ -5157,7 +6474,7 @@ void main()
     v_normalEC = mat3(u_modelView) * a_normal;
     v_texcoord = a_texcoord;
 
-    gl_Position = u_modelViewProjection * vec4(a_position, 1.0);
+    gl_Position = og_modelViewPerspectiveMatrix * vec4(a_position, 1.0);
 }
 ```
 
@@ -5198,7 +6515,7 @@ layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec3 a_normal;
 layout(location = 2) in vec2 a_texcoord;
 
-uniform mat4 u_modelViewProjection;
+uniform mat4 og_modelViewPerspectiveMatrix;
 uniform mat4 u_modelView;
 
 out vec3 v_positionEC;
@@ -5212,7 +6529,7 @@ void main()
     v_normalEC = mat3(u_modelView) * a_normal;
     v_texcoord = a_texcoord;
 
-    gl_Position = u_modelViewProjection * vec4(a_position, 1.0);
+    gl_Position = og_modelViewPerspectiveMatrix * vec4(a_position, 1.0);
 }
 ```
 
@@ -5282,15 +6599,11 @@ var ibo = new BufferObject<uint>(gl, mesh.Indices);
 // 3. Shader
 var shader = ShaderProgram.FromFiles(gl, "Shaders/globe.vert", "Shaders/globe.frag");
 
-// 4. Set uniforms each frame
-shader.Use();
-shader.SetMat4("u_modelViewProjection", sceneState.ModelViewProjectionMatrix);
-shader.SetMat4("u_modelView", sceneState.ModelViewMatrix);
-shader.SetVec3("u_lightDirectionEC", lightDirECx, lightDirECy, lightDirECz);
-shader.SetVec3("u_ambientColor", 0.1f, 0.1f, 0.1f);
-shader.SetVec3("u_specularColor", 0.3f, 0.3f, 0.3f);
-shader.SetFloat("u_shininess", 32.0f);
-shader.SetInt("u_dayTexture", 0); // texture unit 0
+// 4. Set manual per-draw uniforms.
+//    og_modelViewPerspectiveMatrix, og_viewMatrix, og_diffuseSpecularAmbientShininess,
+//    og_texture0..N are handled by the automatic uniform system (Section 19).
+//    Only shader-specific manual uniforms need to be set here.
+((Uniform<int>)shader.Uniforms["u_dayTexture"]).Value = 0;  // texture unit 0
 ```
 
 ---
@@ -5545,14 +6858,14 @@ var renderState = new RenderState
 
 layout(location = 0) in vec3 a_position;
 
-uniform mat4 u_modelViewProjection;
+uniform mat4 og_modelViewPerspectiveMatrix;
 
 out vec3 v_worldPosition;
 
 void main()
 {
     v_worldPosition = a_position;
-    gl_Position = u_modelViewProjection * vec4(a_position, 1.0);
+    gl_Position = og_modelViewPerspectiveMatrix * vec4(a_position, 1.0);
 }
 ```
 
@@ -5759,25 +7072,19 @@ var ibo = new BufferObject<uint>(gl, boxMesh.Indices);
 // 3. Shader
 var shader = ShaderProgram.FromFiles(gl, "Shaders/globe_raycast.vert", "Shaders/globe_raycast.frag");
 
-// 4. Per-frame uniforms
-shader.Use();
-shader.SetMat4("u_modelViewProjection", sceneState.ModelViewProjectionMatrix);
-shader.SetMat4("u_modelView", sceneState.ModelViewMatrix);
-shader.SetMat4("u_projection", sceneState.ProjectionMatrix);
-shader.SetVec3("u_cameraEye",
-    (float)camera.Eye.X, (float)camera.Eye.Y, (float)camera.Eye.Z);
-shader.SetVec3("u_radii",
-    (float)radii.X, (float)radii.Y, (float)radii.Z);
-shader.SetVec3("u_oneOverRadiiSquared",
-    (float)Ellipsoid.Wgs84.OneOverRadiiSquared.X,
-    (float)Ellipsoid.Wgs84.OneOverRadiiSquared.Y,
-    (float)Ellipsoid.Wgs84.OneOverRadiiSquared.Z);
-shader.SetVec3("u_lightDirectionWC", sunX, sunY, sunZ);
-shader.SetVec3("u_ambientColor", 0.1f, 0.1f, 0.1f);
-shader.SetVec3("u_diffuseColor", 0.8f, 0.8f, 0.8f);
-shader.SetVec3("u_specularColor", 0.3f, 0.3f, 0.3f);
-shader.SetFloat("u_shininess", 32.0f);
-shader.SetInt("u_dayTexture", 0);
+// 4. Per-frame manual uniforms.
+//    Automatic uniforms handle og_modelViewPerspectiveMatrix, og_viewMatrix,
+//    og_perspectiveMatrix, og_cameraEye, og_sunPosition,
+//    og_diffuseSpecularAmbientShininess (Section 19). Only the ray-cast-specific
+//    manual uniforms need to be set here:
+((Uniform<Vector3>)shader.Uniforms["u_radii"]).Value =
+    new Vector3((float)radii.X, (float)radii.Y, (float)radii.Z);
+((Uniform<Vector3>)shader.Uniforms["u_oneOverRadiiSquared"]).Value =
+    new Vector3(
+        (float)Ellipsoid.Wgs84.OneOverRadiiSquared.X,
+        (float)Ellipsoid.Wgs84.OneOverRadiiSquared.Y,
+        (float)Ellipsoid.Wgs84.OneOverRadiiSquared.Z);
+((Uniform<int>)shader.Uniforms["u_dayTexture"]).Value = 0;
 ```
 
 ### Trade-Offs: Tessellated vs Ray-Casted
@@ -6050,11 +7357,11 @@ namespace Geode.Core
 
 layout(location = 0) in vec3 a_position;
 
-uniform mat4 u_modelViewProjection;
+uniform mat4 og_modelViewPerspectiveMatrix;
 
 void main()
 {
-    gl_Position = u_modelViewProjection * vec4(a_position, 1.0);
+    gl_Position = og_modelViewPerspectiveMatrix * vec4(a_position, 1.0);
 }
 ```
 
@@ -6751,7 +8058,7 @@ where `C` is a tuning constant (typically 1.0). This maps `z_eye = near` to appr
 
 layout(location = 0) in vec3 a_position;
 
-uniform mat4 u_modelViewProjection;
+uniform mat4 og_modelViewPerspectiveMatrix;
 uniform float u_logDepthC;       // Tuning constant C (typically 1.0)
 uniform float u_logDepthFarPlusOne; // log(C * far + 1)
 
@@ -6760,7 +8067,7 @@ out float v_clipW;
 
 void main()
 {
-    gl_Position = u_modelViewProjection * vec4(a_position, 1.0);
+    gl_Position = og_modelViewPerspectiveMatrix * vec4(a_position, 1.0);
 
     // Compute log-depth for the fragment shader.
     // We use clip-space w (which equals -z_eye for perspective projection)
@@ -7101,10 +8408,19 @@ This appendix maps OpenGlobe names to Geode names. Use it when reading the book 
 | `SceneState` | `SceneState` | Modernized |
 | `Camera` | `CameraState` | Renamed to avoid confusion with Visualization-level camera |
 | `Context` | `RenderContext` | Renamed for clarity |
-| `UniformState` | (integrated) | Uniform setting is done via `ShaderProgram.SetXxx()` |
+| `Uniform` | `Uniform` | Same abstract base |
+| `Uniform<T>` | `Uniform<T>` | Same generic value cache + dirty-on-change |
+| `UniformFloatMatrix44GL3x` et al. | `UniformFloatMatrix44GL` et al. | Same concrete pattern, OpenGL 4.6 DSA via `glProgramUniform*` |
+| `UniformCollection` | `UniformCollection` | Same named collection on `ShaderProgram` |
+| `LinkAutomaticUniform` | `LinkAutomaticUniform` | Same abstract, same TextureUniform example |
+| `DrawAutomaticUniformFactory` | `DrawAutomaticUniformFactory` | Same factory pattern |
+| `DrawAutomaticUniform` | `DrawAutomaticUniform` | Same abstract, `Set(ctx, drawState, sceneState)` |
+| `AutomaticUniformFactoryCollection` (on Device) | `AutomaticUniformFactoryCollection` (static) | Geode has no Device; registry is a static holder |
+| `FragmentOutputs` (on ShaderProgram) | `FragmentOutputs` (on ShaderProgram) | Same, `glGetFragDataLocation` |
 | `MeshBuffers` | (not wrapped) | Using `BufferObject<T>` directly |
 | `VertexBufferAttribute` | `VertexAttrib` | Simplified |
-| `Framebuffer` | (not yet implemented) | Future: off-screen rendering |
+| `Framebuffer` | `Framebuffer` | Same `ColorAttachments` collection + `DepthAttachment` / `DepthStencilAttachment` slots, DSA via `glNamedFramebufferTexture` |
+| `ColorAttachments` | `ColorAttachments` | Same indexable wrapper |
 
 ### Scene/Visualization Types
 
@@ -7126,19 +8442,41 @@ This appendix maps OpenGlobe names to Geode names. Use it when reading the book 
 
 ### Uniform Naming Convention
 
-| OpenGlobe Convention | Geode Convention | Example |
+Geode follows the book's `og_*` naming for every automatic uniform exactly. Manual, per-shader, per-draw uniforms use `u_*` (or no prefix). The `AutomaticUniformFactoryCollection` registry (Section 19) is the source of truth for which names are automatic.
+
+**Automatic uniforms (identical to OpenGlobe):**
+
+| Name | Type | Source |
 |---|---|---|
-| `og_modelViewPerspectiveMatrix` | `u_modelViewProjection` | MVP matrix |
-| `og_modelViewMatrix` | `u_modelView` | MV matrix |
-| `og_perspectiveMatrix` | `u_projection` | Projection matrix |
-| `og_viewportTransformationMatrix` | `u_viewportTransform` | Viewport matrix |
-| `og_cameraEye` | `u_cameraEye` | Camera position |
-| `og_cameraEyeHigh` | `u_cameraEyeHigh` | RTE high part |
-| `og_cameraEyeLow` | `u_cameraEyeLow` | RTE low part |
-| `og_sunPosition` | `u_lightDirectionEC` / `u_lightDirectionWC` | Light direction |
-| `og_diffuseSpecularAmbientShininess` | `u_ambientColor`, `u_diffuseColor`, `u_specularColor`, `u_shininess` | Split into separate uniforms for clarity |
-| `og_texture0` | `u_dayTexture` | Descriptive name |
-| `og_texture1` | `u_nightTexture` | Descriptive name |
+| `og_modelViewPerspectiveMatrix` | `mat4` | `SceneState.ModelViewPerspectiveMatrix` |
+| `og_viewMatrix` | `mat4` | `SceneState.ViewMatrix` |
+| `og_perspectiveMatrix` | `mat4` | `SceneState.PerspectiveMatrix` |
+| `og_modelMatrix` | `mat4` | `SceneState.ModelMatrix` |
+| `og_normalMatrix` | `mat3` | `SceneState.NormalMatrix` |
+| `og_cameraEye` | `vec3` | `SceneState.CameraEyeFloat` |
+| `og_cameraEyeHigh` | `vec3` | DSFP RTE high part (Section 27) |
+| `og_cameraEyeLow` | `vec3` | DSFP RTE low part (Section 27) |
+| `og_cameraLightPosition` | `vec3` | Light attached to the camera |
+| `og_sunPosition` | `vec3` | Sun direction / position |
+| `og_diffuseSpecularAmbientShininess` | `vec4` | Lighting parameters |
+| `og_viewport` | `vec4` | `(x, y, width, height)` |
+| `og_inverseViewport` | `vec4` | `(1/x, 1/y, 1/width, 1/height)` |
+| `og_perspectiveNearPlaneDistance` | `float` | Near plane |
+| `og_perspectiveFarPlaneDistance` | `float` | Far plane |
+| `og_wgs84Height` | `float` | Camera altitude above WGS84 |
+| `og_pixelSizePerDistance` | `float` | Screen-space LOD metric |
+| `og_highResolutionSnapScale` | `float` | Sub-pixel snap factor |
+| `og_texture0..og_texture7` | `sampler2D` | Link-automatic; binds to texture unit 0..7 |
+| `og_modelZToClipCoordinates` | `mat4x2` | Logarithmic depth (Section 28) |
+
+**Manual per-shader examples:**
+
+| Name | Type | Notes |
+|---|---|---|
+| `u_dayTexture`, `u_nightTexture` | `sampler2D` | Shader-specific texture sampler; bound via `((Uniform<int>)shader.Uniforms[name]).Value = unit;` |
+| `u_radii`, `u_oneOverRadiiSquared` | `vec3` | Ray-cast globe shader only (Section 25) |
+| `u_gridLineWidth`, `u_gridColor` | `float`, `vec3` | Lat-long grid shader only (Section 24) |
+| `u_blendDuration` | `float` | Day/night terminator width (Section 26) |
 
 ---
 
