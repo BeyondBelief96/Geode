@@ -19,7 +19,9 @@
       "Bash(wc:*)",
       "Bash(dotnet build:*)",
       "Bash(python gen_remaining.py)",
-      "Bash(rm gen_remaining.py)"
+      "Bash(rm gen_remaining.py)",
+      "Read(//c/c/Users/brand/source/repos/Geode/.claude/worktrees/pedantic-williams-ec3f43/**)",
+      "Read(//c/c/Users/brand/source/repos/Geode/.claude/worktrees/**)"
     ]
   }
 }
