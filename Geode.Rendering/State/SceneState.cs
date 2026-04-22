@@ -3,6 +3,7 @@ using System.Numerics;
 // Alias to avoid a name clash with Silk.NET.Maths.Vector3D<T>.
 using Vector3D = Geode.Core.Vector3D;
 using Matrix3X3 = Silk.NET.Maths.Matrix3X3<float>;
+using Geode.Rendering.State;
 
 namespace Geode.Rendering
 {

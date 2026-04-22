@@ -1,4 +1,6 @@
-﻿namespace Geode.Rendering.Shaders.Uniforms
+﻿using Geode.Rendering.State;
+
+namespace Geode.Rendering.Shaders.Uniforms
 {
     /// <summary>
     /// A setter invoked before every draw that pushes a scene-derived value

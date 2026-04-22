@@ -1,6 +1,6 @@
 using Geode.Core;
 
-namespace Geode.Rendering
+namespace Geode.Rendering.State
 {
     /// <summary>
     /// Defines the position, orientation, and projection parameters of a virtual camera.

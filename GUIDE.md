@@ -59,20 +59,21 @@ The guide's sections track the textbook's section numbering. Book §X.Y is the b
 - [Section 9: OpenGL Fundamentals](#section-9-opengl-fundamentals) -- *scaffold*
 - [Section 10: Renderer Architecture Deep Dive](#section-10-renderer-architecture-deep-dive) -- Book §3.1 + §3.2
 - [Section 11: The Shader Pipeline](#section-11-the-shader-pipeline) -- Book §3.4.1-3 -- `ShaderProgram.cs`
-- [Section 12: Vertex Buffers](#section-12-vertex-buffers) -- Book §3.5 -- `BufferObject.cs`, `VertexAttrib.cs`, `VertexArrayObject.cs`
-- [Section 13: Textures](#section-13-textures) -- Book §3.6 -- `Texture2D.cs`
-- [Section 14: Vertex Data Layouts](#section-14-vertex-data-layouts) -- Book §3.5
 - [Section 15: Renderer State Objects](#section-15-renderer-state-objects) -- Book §3.3.2 + §3.3.5 -- `RenderState.cs`, `ClearState.cs`
 - [Section 16: Camera and Scene State](#section-16-camera-and-scene-state) -- Book §3.3 -- `CameraState.cs`, `SceneState.cs`
 - [Section 17: Draw State](#section-17-draw-state) -- Book §3.3.4 -- `DrawState.cs`
 - [Section 18: Render Context](#section-18-render-context) -- Book §3.2 + §3.3.3 -- `RenderContext.cs`
 - [Section 19: The Automatic Uniform System](#section-19-the-automatic-uniform-system) -- Book §3.4.5 -- `IAutomaticUniform.cs`, `AutomaticUniforms.cs`, concrete uniform classes
 - [Section 19.25: The Shader Cache](#section-1925-the-shader-cache) -- Book §3.4.6 -- `ShaderCache.cs`
+- [Section 12: Vertex Buffers and Vertex Arrays](#section-12-vertex-buffers-and-vertex-arrays) -- Book §3.5 -- `BufferObject.cs`, `VertexAttrib.cs`, `VertexArrayObject.cs`
+- [Section 14: Vertex Data Layouts](#section-14-vertex-data-layouts) -- Book §3.5.3
+- [Section 14.5: Meshes](#section-145-meshes) -- Book §3.5.6 -- *Design section; files in Geode.Core/Geometry/ when tessellators arrive*
+- [Section 13: Textures](#section-13-textures) -- Book §3.6 -- `Texture2D.cs`, `Texture2DDescription.cs`, `TextureFormat.cs`, `TextureSampler.cs`, `WritePixelBuffer.cs` / `ReadPixelBuffer.cs` (staged rollout)
 - [Section 19.5: Framebuffers](#section-195-framebuffers) -- Book §3.7 -- `Framebuffer.cs`
 - [Section 20: Window, Context, Render Loop, and Drawing a Triangle](#section-20-window-context-render-loop-and-drawing-a-triangle) -- Book §3.8 -- `Program.cs`
 - [Section 20.5: Resources](#section-205-resources) -- Book §3.9
 
-> **Reading note for Part III.** The book's Chapter 3 presents topics in this order: §3.3 State Management, §3.4 Shaders, §3.5 Vertex Data, §3.6 Textures, §3.7 Framebuffers, §3.8 Triangle. This guide's sections are not yet physically in book order -- shaders (§11) come before state objects (§15-§18) because the original build order composed simpler types first. When reading alongside the book, follow this *logical* order: §10 → §15 → §16 → §17 → §18 → §11 → §19 → §12-§14 → §13 → §19.5 → §20 → §20.5. A future revision will physically reorder the file.
+> **Reading note for Part III.** The TOC above is in book reading order, which matches the file's physical order from §19.25 onward. The remaining ordering mismatch is that §11 (ShaderProgram) appears physically before §15-§18 (state objects) -- the original build-dependency order kept simpler classes first. When reading alongside the book's §3.3 State Management chapter, jump to §15-§18 before §11 and §19. A future revision will move §15-§18 ahead of §11 to close that gap.
 
 ### Part IV -- Globe Rendering (Book Chapter 4)
 - [Section 21: Tessellating the Globe](#section-21-step-2--globe-tessellation) -- Book §4.1
@@ -1668,27 +1669,30 @@ The book's Chapter 3 presents topics in this sequence:
 | §3.2 | Bird's-Eye View (Device/Context) | §10, §18 |
 | §3.3 | State Management (RenderState, ClearState, DrawState, Context sync) | §15, §16, §17, §18 |
 | §3.4 | Shaders (compilation, vertex attributes, fragment outputs, uniforms, automatic uniforms, shader cache) | §11, §19, §19.25 |
-| §3.5 | Vertex Data (buffers, index buffers, vertex arrays, layouts, meshes) | §12, §14 |
+| §3.5 | Vertex Data (buffers, index buffers, vertex arrays, layouts, meshes) | §12, §14, §14.5 |
 | §3.6 | Textures (textures, samplers, texture units) | §13 |
 | §3.7 | Framebuffers | §19.5 |
 | §3.8 | Putting It All Together: Rendering a Triangle | §20 |
 | §3.9 | Resources | §20.5 |
 
-The guide's physical order does **not** yet match the book. The current order is *build-dependency order* -- each section introduces the types its successors reference, so everything compiles incrementally from top to bottom. The book's order is *concept order* -- state before shaders, framebuffers before the triangle. Both are valid; they optimize for different things (compile-as-you-go vs. parallel reading with the book).
+The guide's physical order **now matches book order** from §19.25 onward -- §3.4.6 (ShaderCache) → §3.5 (Vertex Data) → §3.6 (Textures) → §3.7 (Framebuffers) → §3.8 (Triangle) reads top-to-bottom as the book does.
 
-If you are reading alongside the book, walk the guide in this logical order instead:
+One mismatch remains in the first half: §11 (ShaderProgram) is physically before §15-§18 (state objects), because the original build-dependency order introduced simpler classes first. The book's §3.3 State Management comes before its §3.4 Shaders. Reading alongside the book, follow this order:
 
 ```
 §8 (transform chain)  →  §9 (OpenGL primer)  →  §10 (renderer architecture)
-  →  §15 (RenderState, ClearState)  →  §16 (CameraState, SceneState)
+  →  §15 (RenderState, ClearState)  →  §16 (CameraState, SceneState)       ← book §3.3
   →  §17 (DrawState)  →  §18 (RenderContext)
-  →  §11 (ShaderProgram)  →  §19 (Automatic uniforms)  →  §19.25 (Shader cache)
-  →  §12 (BufferObject, VertexAttrib, VAO)  →  §14 (Vertex data layouts)
-  →  §13 (Texture2D)  →  §19.5 (Framebuffer)
-  →  §20 (Triangle)  →  §20.5 (Resources)
+  →  §11 (ShaderProgram)                                                    ← book §3.4.1-3
+  →  §19 (Automatic uniforms)  →  §19.25 (Shader cache)                     ← book §3.4.5-6
+  →  §12 (BufferObject, VertexAttrib, VAO)  →  §14 (Vertex data layouts)    ← book §3.5.1-5
+  →  §14.5 (Mesh, Core-layer geometry)                                       ← book §3.5.6
+  →  §13 (Texture2D)                                                         ← book §3.6
+  →  §19.5 (Framebuffer)                                                    ← book §3.7
+  →  §20 (Triangle)  →  §20.5 (Resources)                                   ← book §3.8-9
 ```
 
-A future revision will physically reorder the file to match book order. For now, the cross-reference note at the top of each section tells you where in the book you are.
+The remaining `§11 before §15-§18` inversion will be closed in a future revision that moves the state-object sections ahead of the shader section.
 
 ### What the guide faithfully implements from the book
 
@@ -1699,8 +1703,8 @@ Part III now matches the book's architecture on every major structure:
 - **Book §3.4.4 Uniforms.** Typed `Uniform` / `Uniform<T>` hierarchy, concrete `UniformFloatMatrix44GL` et al., named `UniformCollection` on `ShaderProgram`, dirty list + `Clean` flush via `glProgramUniform*` (§19).
 - **Book §3.4.5 Automatic Uniforms.** Full `LinkAutomaticUniform` + `DrawAutomaticUniformFactory` + `DrawAutomaticUniform` split, `AutomaticUniformFactoryCollection` registry, per-program automatic-uniform list populated at link time (§19). The `geode_` prefix is this guide's equivalent of the book's `og_` convention.
 - **Book §3.4.6 ShaderCache.** Reference-counted cache of compiled `ShaderProgram` instances, keyed by application-chosen strings, with thread-safe `Find` / `FindOrAdd` / `Release` semantics. Owned by `RenderContext`. Required for sort-by-state (once that lands) to use reference equality on the shader field (§19.25).
-- **Book §3.5 Vertex Data.** `BufferObject<T>`, `VertexAttrib`, `VertexArrayObject` with DSA (§12, §14).
-- **Book §3.6 Textures.** `Texture2D` with DSA, samplers, texture units (§13). `Texture2DDescription` carries format-renderability flags consumed by `Framebuffer` validation.
+- **Book §3.5 Vertex Data.** `BufferObject<T>`, `VertexAttrib`, `VertexArrayObject` with DSA (§12, §14). The §3.5.6 Mesh design -- system-memory geometry living in `Geode.Core`, with a named-attribute collection and typed indices base -- is specified in §14.5; the actual `.cs` files come online when Part IV tessellators start producing geometry.
+- **Book §3.6 Textures.** Full surface specified in §13 across eleven sub-sections: `Texture2DDescription` (immutable spec with renderability flags), `TextureFormat` enum, pixel buffers (`WritePixelBuffer` / `ReadPixelBuffer`), `ImageFormat` / `ImageDatatype`, `Texture2D.CopyFromBuffer` / `CopyToBuffer` / `Save`, texture rectangles (unnormalized coords for §11 ray-casting), `TextureSampler` decoupled from textures, the four pre-made samplers on `RenderContext.Samplers`, and multitexturing via `RenderContext.TextureUnits[]`. Current `Texture2D.cs` is the starter -- the "Current vs target" table at the end of §13 orders the rollout by consuming feature (Framebuffer, §26 day/night, §22 tile streaming, §11 height fields).
 - **Book §3.7 Framebuffers.** Indexable `ColorAttachments` collection, single `DepthAttachment` / `DepthStencilAttachment` slots, format validation at assignment time, delayed `glNamedFramebufferTexture` flushed on `Bind()`, named fragment-output routing via `shader.FragmentOutputs["name"]` (§19.5).
 - **Book §3.8 Triangle.** The payoff example (§20) uses the automatic uniform for MVP and the manual `Uniforms[...]` collection for per-draw values.
 
@@ -2356,493 +2360,6 @@ var shader = new ShaderProgram(gl, vertSrc, fragSrc);
 ```
 
 For shaders with many color attachments (§19.5 Framebuffers), the FragmentOutputs collection connects the shader's named outputs to specific framebuffer attachment slots.
-
----
-
-## Section 12: Vertex Buffers and Vertex Arrays
-
-*Corresponds to Book Chapter 3, Section 3.5*
-
-*OpenGlobe source: `Source/Renderer/GL3x/Buffers/`, `Source/Renderer/GL3x/VertexArray/`*
-
-This section builds three files that handle vertex data on the GPU:
-- `BufferObject<T>` -- a generic typed GPU buffer (VBO or EBO)
-- `VertexAttrib` -- a tiny descriptor for one vertex attribute
-- `VertexArrayObject` -- a VAO that binds a VBO, EBO, and attribute layout together
-
-All three depend only on Silk.NET. They do not reference any other Geode type.
-
-### BufferObject.cs
-
-A `BufferObject<T>` wraps a single OpenGL buffer. It uses DSA (`glCreateBuffer` + `glNamedBufferStorage`) to create an **immutable** buffer -- once the data is uploaded, the buffer's size cannot change. This is a deliberate design choice:
-
-- Immutable buffers (`glNamedBufferStorage`) cannot be accidentally reallocated. In OpenGL 3.3, `glBufferData` can be called again on the same buffer, silently orphaning the old data. Immutable storage prevents this class of bugs.
-- The `DynamicStorageBit` flag allows the data to be updated via `glNamedBufferSubData`, but the buffer size remains fixed. We use this for cases where we need to update vertex data (e.g., streaming terrain tiles) without reallocating.
-
-> **3.3 vs 4.6 -- Buffer Creation**
->
-> In OpenGL 3.3, you must bind the buffer to a target (`GL_ARRAY_BUFFER`) before uploading data. This mutates global state and creates ordering dependencies. With DSA, `glNamedBufferStorage` takes the handle directly -- no binding, no global state mutation. The buffer is usable immediately after creation regardless of what else is bound.
-
-```csharp
-// Geode.Rendering/BufferObject.cs
-//
-// A generic GPU buffer that stores an array of unmanaged T values.
-// Uses DSA (glCreateBuffer + glNamedBufferStorage) for immutable allocation.
-//
-// Book Chapter 3, Section 3.5.
-// OpenGlobe: Source/Renderer/GL3x/Buffers/BufferGL3x.cs
-
-using Silk.NET.OpenGL;
-using System;
-
-namespace Geode.Rendering
-{
-    /// <summary>
-    /// A typed GPU buffer (VBO, EBO, or any buffer target).
-    /// Created with immutable storage via DSA -- the size is fixed at creation.
-    /// </summary>
-    /// <typeparam name="T">The element type (float, uint, etc.). Must be unmanaged.</typeparam>
-    public class BufferObject<T> : IDisposable where T : unmanaged
-    {
-        private readonly GL _gl;
-        private readonly uint _handle;
-
-        /// <summary>The raw GL buffer handle.</summary>
-        public uint Handle => _handle;
-
-        /// <summary>
-        /// Creates a GPU buffer and uploads the given data.
-        /// Uses glCreateBuffer (DSA) + glNamedBufferStorage (immutable).
-        /// </summary>
-        /// <param name="gl">The Silk.NET OpenGL context.</param>
-        /// <param name="data">The data to upload. The buffer size is fixed to this length.</param>
-        public unsafe BufferObject(GL gl, ReadOnlySpan<T> data)
-        {
-            _gl = gl;
-
-            // DSA: create buffer without binding to any target
-            _handle = _gl.CreateBuffer();
-
-            // Upload data with immutable storage.
-            // DynamicStorageBit: allows glNamedBufferSubData for updates, but not resize.
-            fixed (void* ptr = data)
-            {
-                _gl.NamedBufferStorage(
-                    _handle,
-                    (nuint)(data.Length * sizeof(T)),
-                    ptr,
-                    BufferStorageMask.DynamicStorageBit);
-            }
-        }
-
-        /// <summary>
-        /// Deletes the GL buffer. Must be called on the render thread.
-        /// </summary>
-        public void Dispose()
-        {
-            _gl.DeleteBuffer(_handle);
-        }
-    }
-}
-```
-
----
-
-### VertexAttrib
-
-A vertex attribute descriptor. This is intentionally tiny -- just an index and a component count. The index must match the `layout(location = N)` in the GLSL shader.
-
-```csharp
-// Geode.Rendering/VertexAttrib.cs
-//
-// Describes a single vertex attribute: which shader location it binds to
-// and how many float components it has.
-//
-// Examples:
-//   Position (vec3): new VertexAttrib(0, 3)
-//   Normal   (vec3): new VertexAttrib(1, 3)
-//   TexCoord (vec2): new VertexAttrib(2, 2)
-
-namespace Geode.Rendering
-{
-    /// <summary>
-    /// Describes one vertex attribute for VAO setup.
-    /// </summary>
-    /// <param name="Index">The shader attribute location (layout(location = N)).</param>
-    /// <param name="Components">Number of float components (2 for vec2, 3 for vec3, etc.).</param>
-    public readonly record struct VertexAttrib(uint Index, int Components);
-}
-```
-
----
-
-### VertexArrayObject.cs
-
-The VAO ties everything together: it references a VBO (vertex data), an EBO (index data), and a set of attribute format descriptions. When the VAO is bound and a draw call is issued, OpenGL knows exactly how to read vertices from the buffer.
-
-The DSA setup for VAOs is more verbose than the 3.3 pattern, but it separates **format** (what the data looks like) from **binding** (where the data lives). This separation is a significant improvement:
-
-- `glVertexArrayAttribFormat` describes the data type and offset of each attribute
-- `glVertexArrayVertexBuffer` tells the VAO which buffer to read from and at what stride
-- `glVertexArrayElementBuffer` attaches the index buffer
-
-> **3.3 vs 4.6 -- VAO Attribute Setup**
->
-> In OpenGL 3.3, `glVertexAttribPointer` combines format and binding into one call, and requires the VBO to be bound to `GL_ARRAY_BUFFER` at the time of the call. In 4.6, format and binding are separate operations on a named VAO. This means you can change which buffer a VAO reads from without re-specifying the format -- useful for buffer streaming.
-
-```csharp
-// Geode.Rendering/VertexArrayObject.cs
-//
-// A Vertex Array Object that binds vertex data (VBO), index data (EBO),
-// and attribute layout into a single drawable unit.
-//
-// Uses DSA: glCreateVertexArrays, glVertexArrayAttribFormat,
-// glVertexArrayVertexBuffer, glVertexArrayElementBuffer.
-//
-// Book Chapter 3, Section 3.5.
-// OpenGlobe: Source/Renderer/GL3x/VertexArray/VertexArrayGL3x.cs
-
-using Silk.NET.OpenGL;
-using System;
-
-namespace Geode.Rendering
-{
-    /// <summary>
-    /// A Vertex Array Object that owns a VBO and EBO and describes the vertex layout.
-    /// Bind this VAO before issuing glDrawElements.
-    /// </summary>
-    public class VertexArrayObject : IDisposable
-    {
-        private readonly GL _gl;
-        private readonly uint _handle;
-        private readonly BufferObject<float> _vbo;
-        private readonly BufferObject<uint> _ebo;
-        private readonly int _indexCount;
-
-        /// <summary>The raw GL VAO handle.</summary>
-        public uint Handle => _handle;
-
-        /// <summary>The number of indices in the element buffer.</summary>
-        public int IndexCount => _indexCount;
-
-        /// <summary>
-        /// Creates a VAO with the given vertex data, index data, and attribute layout.
-        /// </summary>
-        /// <param name="gl">The Silk.NET OpenGL context.</param>
-        /// <param name="vertices">Interleaved vertex data (floats).</param>
-        /// <param name="indices">Triangle indices (unsigned ints).</param>
-        /// <param name="attributes">
-        /// Attribute descriptors in order. The stride is computed automatically
-        /// by summing all component counts * sizeof(float).
-        /// Example: [VertexAttrib(0, 3), VertexAttrib(1, 3)] describes
-        /// a vertex with position (vec3) + color (vec3) = 6 floats = 24 bytes stride.
-        /// </param>
-        public VertexArrayObject(GL gl, float[] vertices, uint[] indices,
-            params VertexAttrib[] attributes)
-        {
-            _gl = gl;
-            _indexCount = indices.Length;
-
-            // Create the VBO and EBO (data is uploaded immediately)
-            _vbo = new BufferObject<float>(gl, vertices);
-            _ebo = new BufferObject<uint>(gl, indices);
-
-            // DSA: Create the VAO without binding
-            _handle = _gl.CreateVertexArray();
-
-            // Compute stride: total floats per vertex * sizeof(float)
-            int totalFloats = 0;
-            foreach (VertexAttrib attrib in attributes)
-                totalFloats += attrib.Components;
-            uint stride = (uint)(totalFloats * sizeof(float));
-
-            // Bind the VBO to binding point 0 of this VAO.
-            // The offset is 0 (start of buffer) and stride is the total vertex size.
-            _gl.VertexArrayVertexBuffer(_handle, 0, _vbo.Handle, 0, stride);
-
-            // Attach the EBO to this VAO.
-            _gl.VertexArrayElementBuffer(_handle, _ebo.Handle);
-
-            // Set up each attribute's format and enable it.
-            uint offset = 0;
-            foreach (VertexAttrib attrib in attributes)
-            {
-                // Describe the attribute: index, component count, type, normalized, offset
-                _gl.VertexArrayAttribFormat(
-                    _handle,
-                    attrib.Index,
-                    attrib.Components,
-                    VertexAttribType.Float,
-                    false,
-                    offset);
-
-                // Associate this attribute with binding point 0 (where our VBO is)
-                _gl.VertexArrayAttribBinding(_handle, attrib.Index, 0);
-
-                // Enable the attribute
-                _gl.EnableVertexArrayAttrib(_handle, attrib.Index);
-
-                // Advance offset for the next attribute
-                offset += (uint)(attrib.Components * sizeof(float));
-            }
-        }
-
-        /// <summary>
-        /// Deletes the VAO and its owned VBO and EBO.
-        /// </summary>
-        public void Dispose()
-        {
-            _gl.DeleteVertexArray(_handle);
-            _vbo.Dispose();
-            _ebo.Dispose();
-        }
-    }
-}
-```
-
-**Line count:** ~80 lines for VertexArrayObject, ~40 for BufferObject, ~3 for VertexAttrib.
-
-**The key insight** is that `VertexArrayObject` *owns* its buffers. When the VAO is disposed, the buffers are disposed too. This prevents resource leaks and simplifies the caller's lifetime management -- they only need to track one object.
-
----
-
-## Section 13: Textures
-
-*Corresponds to Book Chapter 3, Section 3.6*
-
-*OpenGlobe source: `Source/Renderer/GL3x/Textures/Texture2DGL3x.cs`*
-
-A texture is a 2D image stored on the GPU, sampled by fragment shaders to color surfaces. The `Texture2D` class wraps texture creation, parameter setup, mipmap generation, and binding.
-
-### Texture Concepts
-
-**Samplers** are the GLSL mechanism for reading textures. A `sampler2D` uniform is bound to a **texture unit** (an integer slot). The texture unit links the GLSL sampler to a specific texture object.
-
-For the conventional `og_texture0..og_texture7` names, Section 19's link-automatic `TextureUniform` binds them to units 0..7 at shader link time -- no application code needed. For other sampler names (e.g. a shader-specific `u_dayTexture`), bind manually via the `Uniforms` collection:
-
-```csharp
-texture.Bind(0);                                                     // Bind texture to unit 0
-((Uniform<int>)shader.Uniforms["u_dayTexture"]).Value = 0;           // Tell the sampler to read from unit 0
-```
-
-**Filtering** controls how the GPU interpolates between texels (texture pixels):
-- `GL_NEAREST`: nearest-neighbor, pixelated look
-- `GL_LINEAR`: bilinear interpolation, smooth
-- `GL_LINEAR_MIPMAP_LINEAR`: trilinear, smooth with LOD transitions (best quality for minification)
-
-**Wrapping** controls what happens when texture coordinates go outside [0, 1]:
-- `GL_REPEAT`: the texture tiles
-- `GL_CLAMP_TO_EDGE`: the edge texel is extended
-
-For globe rendering, longitude wrapping is `REPEAT` (the globe wraps around) and latitude is `CLAMP_TO_EDGE` (the poles do not wrap).
-
-> **3.3 vs 4.6 -- Texture Creation**
->
-> In OpenGL 3.3, texture creation requires binding: `glGenTextures` + `glBindTexture(GL_TEXTURE_2D, handle)` + `glTexImage2D(...)`. Any other code that binds `GL_TEXTURE_2D` between your gen and your tex calls corrupts your setup. With DSA, `glCreateTextures(GL_TEXTURE_2D)` + `glTextureStorage2D(handle, ...)` operates directly on the handle. No binding, no corruption risk.
-
-### Complete Source
-
-```csharp
-// Geode.Rendering/Texture2D.cs
-//
-// A 2D texture stored on the GPU with mipmaps.
-// Uses DSA: glCreateTextures, glTextureStorage2D, glTextureSubImage2D.
-//
-// Book Chapter 3, Section 3.6.
-// OpenGlobe: Source/Renderer/GL3x/Textures/Texture2DGL3x.cs
-//
-// Default sampler settings:
-//   Min filter: LinearMipmapLinear (trilinear -- best quality for minification)
-//   Mag filter: Linear (bilinear -- smooth magnification)
-//   Wrap S:     Repeat (longitude wraps around the globe)
-//   Wrap T:     ClampToEdge (latitude does not wrap past the poles)
-
-using Silk.NET.OpenGL;
-using System;
-
-namespace Geode.Rendering
-{
-    /// <summary>
-    /// A 2D texture on the GPU with automatic mipmap generation.
-    /// </summary>
-    public class Texture2D : IDisposable
-    {
-        private readonly GL _gl;
-        private readonly uint _handle;
-
-        /// <summary>The raw GL texture handle.</summary>
-        public uint Handle => _handle;
-
-        /// <summary>Texture width in pixels.</summary>
-        public int Width { get; }
-
-        /// <summary>Texture height in pixels.</summary>
-        public int Height { get; }
-
-        /// <summary>
-        /// Creates a 2D texture from raw RGBA pixel data.
-        /// </summary>
-        /// <param name="gl">The Silk.NET OpenGL context.</param>
-        /// <param name="width">Texture width in pixels.</param>
-        /// <param name="height">Texture height in pixels.</param>
-        /// <param name="pixels">
-        /// Raw pixel data in RGBA format (4 bytes per pixel).
-        /// The array length must be width * height * 4.
-        /// </param>
-        public unsafe Texture2D(GL gl, int width, int height, byte[] pixels)
-        {
-            _gl = gl;
-            Width = width;
-            Height = height;
-
-            // DSA: Create texture object with a specific target
-            _handle = _gl.CreateTexture(TextureTarget.Texture2D);
-
-            // Compute mipmap levels: floor(log2(max(width, height))) + 1
-            int levels = 1 + (int)Math.Floor(Math.Log2(Math.Max(width, height)));
-
-            // Allocate immutable storage for all mipmap levels.
-            // SizedInternalFormat.Rgba8: 8 bits per channel, 4 channels.
-            _gl.TextureStorage2D(_handle, (uint)levels, SizedInternalFormat.Rgba8,
-                (uint)width, (uint)height);
-
-            // Upload pixel data to mipmap level 0 (the full-resolution image).
-            fixed (byte* ptr = pixels)
-            {
-                _gl.TextureSubImage2D(_handle, 0, 0, 0,
-                    (uint)width, (uint)height,
-                    PixelFormat.Rgba, PixelType.UnsignedByte, ptr);
-            }
-
-            // Set default sampler parameters.
-            // Min filter: trilinear (linear interpolation between mipmap levels)
-            _gl.TextureParameterI(_handle, TextureParameterName.TextureMinFilter,
-                (int)GLEnum.LinearMipmapLinear);
-            // Mag filter: bilinear (smooth magnification)
-            _gl.TextureParameterI(_handle, TextureParameterName.TextureMagFilter,
-                (int)GLEnum.Linear);
-            // Wrap S (horizontal / longitude): repeat for globe wrap-around
-            _gl.TextureParameterI(_handle, TextureParameterName.TextureWrapS,
-                (int)GLEnum.Repeat);
-            // Wrap T (vertical / latitude): clamp to prevent pole artifacts
-            _gl.TextureParameterI(_handle, TextureParameterName.TextureWrapT,
-                (int)GLEnum.ClampToEdge);
-
-            // Generate all mipmap levels from the base level.
-            // This computes progressively smaller versions of the texture
-            // for use when the surface is far from the camera.
-            _gl.GenerateTextureMipmap(_handle);
-        }
-
-        /// <summary>
-        /// Binds this texture to a texture unit for use by a sampler in a shader.
-        /// </summary>
-        /// <param name="unit">
-        /// The texture unit index (0, 1, 2, ...). Must match the integer value
-        /// set on the sampler2D uniform in the shader.
-        /// </param>
-        public void Bind(uint unit)
-        {
-            // DSA: glBindTextureUnit binds a texture to a specific unit
-            // without affecting the active texture state.
-            _gl.BindTextureUnit(unit, _handle);
-        }
-
-        /// <summary>
-        /// Loads a texture from an image file on disk.
-        /// Requires StbImageSharp (included in Geode.Rendering.csproj).
-        /// </summary>
-        /// <param name="gl">The Silk.NET OpenGL context.</param>
-        /// <param name="path">Path to the image file (PNG, JPG, BMP, etc.).</param>
-        /// <returns>A Texture2D with the image data uploaded and mipmaps generated.</returns>
-        public static Texture2D FromFile(GL gl, string path)
-        {
-            // StbImageSharp loads images into a flat byte array in RGBA format.
-            // It handles PNG, JPG, BMP, TGA, and other common formats.
-            using var stream = System.IO.File.OpenRead(path);
-            var image = StbImageSharp.ImageResult.FromStream(stream,
-                StbImageSharp.ColorComponents.RedGreenBlueAlpha);
-
-            return new Texture2D(gl, image.Width, image.Height, image.Data);
-        }
-
-        /// <summary>
-        /// Deletes the GL texture. Must be called on the render thread.
-        /// </summary>
-        public void Dispose()
-        {
-            _gl.DeleteTexture(_handle);
-        }
-    }
-}
-```
-
-**Line count:** ~80 lines.
-
-**Note on StbImageSharp:** The `FromFile` factory uses `StbImageSharp`, which is already a dependency in `Geode.Rendering.csproj`. It is a pure-C# image loader -- no native binaries needed. For production globe tiles, you would use a more specialized loader (e.g., for GeoTIFF or JPEG2000), but StbImageSharp is sufficient for development textures.
-
----
-
-## Section 14: Vertex Data Layouts
-
-*Corresponds to Book Chapter 3, Section 3.5.3*
-
-This is a conceptual section -- no new files. It explains the three approaches to organizing vertex data in GPU buffers and justifies our choice.
-
-### Three Approaches
-
-**Approach 1: Separate Buffers** -- one buffer per attribute.
-
-```
-VBO 0 (positions): [P0 P1 P2 P3 P4 ...]
-VBO 1 (normals):   [N0 N1 N2 N3 N4 ...]
-VBO 2 (texcoords): [T0 T1 T2 T3 T4 ...]
-```
-
-Pros: Easy to update one attribute without touching others. Flexible.
-Cons: Three separate buffer binds per draw call. Poor cache performance -- reading vertex 0 requires three separate cache lines.
-
-**Approach 2: Non-Interleaved (Array of Structs in a single buffer)**
-
-```
-VBO: [P0 P1 P2 ... Pn | N0 N1 N2 ... Nn | T0 T1 T2 ... Tn]
-```
-
-Pros: Single buffer bind. Can update one attribute range.
-Cons: Still poor cache performance for reading complete vertices.
-
-**Approach 3: Interleaved (Struct of Arrays pattern)**
-
-```
-VBO: [P0 N0 T0 | P1 N1 T1 | P2 N2 T2 | ...]
-```
-
-Pros: Reading vertex N loads all its attributes into a single cache line. Best performance for static geometry. Single buffer bind.
-Cons: Cannot update one attribute without re-uploading the entire vertex.
-
-### Our Choice: Interleaved
-
-For a virtual globe, terrain and imagery tiles are generated on the CPU, uploaded to the GPU once, and drawn many times without modification (until the tile is replaced by a higher-LOD version). This is the ideal case for interleaved layout: maximum cache performance during the many draw calls, no penalty from the write-once upload.
-
-### GlobeVertex (Conceptual)
-
-When we build the globe tessellator in Part IV, each vertex will have this layout:
-
-```
-GlobeVertex (32 bytes total):
-  ├── Position  (vec3, 12 bytes)  -- ECEF position in meters
-  ├── Normal    (vec3, 12 bytes)  -- Geodetic surface normal (unit vector)
-  └── TexCoord  (vec2,  8 bytes)  -- Texture coordinates (longitude/latitude mapped to [0,1])
-```
-
-This maps to three vertex attributes:
-```csharp
-new VertexAttrib(0, 3),  // position: location 0, 3 components
-new VertexAttrib(1, 3),  // normal:   location 1, 3 components
-new VertexAttrib(2, 2),  // texcoord: location 2, 2 components
-```
-
-Total stride: 32 bytes. At 1024 vertices per tile edge (a high-detail terrain tile), that is 1024 * 1024 * 32 = 33,554,432 bytes = 32 MB per tile. This is large, which is why LOD management (Part IV) is critical.
 
 ---
 
@@ -5126,6 +4643,1057 @@ Right now, with only the triangle demo shader, the cache is a formality -- a sin
 - **§21 Tessellation** -- still only one shader, but calling through the cache means the triangle shader is auto-disposed on `RenderContext.Dispose` instead of the App having to remember to dispose it explicitly.
 - **§22+ tile rendering** -- the first real sharing. N tiles → one shared program. Measurable compile-time savings.
 - **Sort-by-state** -- whenever that lands, the shader field in the bucketing sort is already a shared reference, so no additional work is needed.
+
+---
+
+## Section 12: Vertex Buffers and Vertex Arrays
+
+*Corresponds to Book Chapter 3, Section 3.5*
+
+*OpenGlobe source: `Source/Renderer/GL3x/Buffers/`, `Source/Renderer/GL3x/VertexArray/`*
+
+This section builds three files that handle vertex data on the GPU:
+- `BufferObject<T>` -- a generic typed GPU buffer (VBO or EBO)
+- `VertexAttrib` -- a tiny descriptor for one vertex attribute
+- `VertexArrayObject` -- a VAO that binds a VBO, EBO, and attribute layout together
+
+All three depend only on Silk.NET. They do not reference any other Geode type.
+
+### BufferObject.cs
+
+A `BufferObject<T>` wraps a single OpenGL buffer. It uses DSA (`glCreateBuffer` + `glNamedBufferStorage`) to create an **immutable** buffer -- once the data is uploaded, the buffer's size cannot change. This is a deliberate design choice:
+
+- Immutable buffers (`glNamedBufferStorage`) cannot be accidentally reallocated. In OpenGL 3.3, `glBufferData` can be called again on the same buffer, silently orphaning the old data. Immutable storage prevents this class of bugs.
+- The `DynamicStorageBit` flag allows the data to be updated via `glNamedBufferSubData`, but the buffer size remains fixed. We use this for cases where we need to update vertex data (e.g., streaming terrain tiles) without reallocating.
+
+> **3.3 vs 4.6 -- Buffer Creation**
+>
+> In OpenGL 3.3, you must bind the buffer to a target (`GL_ARRAY_BUFFER`) before uploading data. This mutates global state and creates ordering dependencies. With DSA, `glNamedBufferStorage` takes the handle directly -- no binding, no global state mutation. The buffer is usable immediately after creation regardless of what else is bound.
+
+```csharp
+// Geode.Rendering/Buffers/BufferObject.cs
+//
+// A generic GPU buffer that stores an array of unmanaged T values.
+// Uses DSA (glCreateBuffer + glNamedBufferStorage) for immutable allocation.
+//
+// Book Chapter 3, Section 3.5.
+// OpenGlobe: Source/Renderer/GL3x/Buffers/BufferGL3x.cs
+
+using Silk.NET.OpenGL;
+using System;
+
+namespace Geode.Rendering
+{
+    /// <summary>
+    /// A typed GPU buffer (VBO, EBO, or any buffer target).
+    /// Created with immutable storage via DSA -- the size is fixed at creation.
+    /// </summary>
+    /// <typeparam name="T">The element type (float, uint, etc.). Must be unmanaged.</typeparam>
+    public class BufferObject<T> : IDisposable where T : unmanaged
+    {
+        private readonly GL _gl;
+        private readonly uint _handle;
+
+        /// <summary>The raw GL buffer handle.</summary>
+        public uint Handle => _handle;
+
+        /// <summary>
+        /// Creates a GPU buffer and uploads the given data.
+        /// Uses glCreateBuffer (DSA) + glNamedBufferStorage (immutable).
+        /// </summary>
+        /// <param name="gl">The Silk.NET OpenGL context.</param>
+        /// <param name="data">The data to upload. The buffer size is fixed to this length.</param>
+        public unsafe BufferObject(GL gl, ReadOnlySpan<T> data)
+        {
+            _gl = gl;
+
+            // DSA: create buffer without binding to any target
+            _handle = _gl.CreateBuffer();
+
+            // Upload data with immutable storage.
+            // DynamicStorageBit: allows glNamedBufferSubData for updates, but not resize.
+            fixed (void* ptr = data)
+            {
+                _gl.NamedBufferStorage(
+                    _handle,
+                    (nuint)(data.Length * sizeof(T)),
+                    ptr,
+                    BufferStorageMask.DynamicStorageBit);
+            }
+        }
+
+        /// <summary>
+        /// Deletes the GL buffer. Must be called on the render thread.
+        /// </summary>
+        public void Dispose()
+        {
+            _gl.DeleteBuffer(_handle);
+        }
+    }
+}
+```
+
+---
+
+### VertexAttrib
+
+A vertex attribute descriptor. This is intentionally tiny -- just an index and a component count. The index must match the `layout(location = N)` in the GLSL shader.
+
+```csharp
+// Geode.Rendering/Buffers/VertexAttribute.cs
+//
+// Describes a single vertex attribute: which shader location it binds to
+// and how many float components it has.
+//
+// Examples:
+//   Position (vec3): new VertexAttrib(0, 3)
+//   Normal   (vec3): new VertexAttrib(1, 3)
+//   TexCoord (vec2): new VertexAttrib(2, 2)
+
+namespace Geode.Rendering
+{
+    /// <summary>
+    /// Describes one vertex attribute for VAO setup.
+    /// </summary>
+    /// <param name="Index">The shader attribute location (layout(location = N)).</param>
+    /// <param name="Components">Number of float components (2 for vec2, 3 for vec3, etc.).</param>
+    public readonly record struct VertexAttrib(uint Index, int Components);
+}
+```
+
+---
+
+### VertexArrayObject.cs
+
+The VAO ties everything together: it references a VBO (vertex data), an EBO (index data), and a set of attribute format descriptions. When the VAO is bound and a draw call is issued, OpenGL knows exactly how to read vertices from the buffer.
+
+The DSA setup for VAOs is more verbose than the 3.3 pattern, but it separates **format** (what the data looks like) from **binding** (where the data lives). This separation is a significant improvement:
+
+- `glVertexArrayAttribFormat` describes the data type and offset of each attribute
+- `glVertexArrayVertexBuffer` tells the VAO which buffer to read from and at what stride
+- `glVertexArrayElementBuffer` attaches the index buffer
+
+> **3.3 vs 4.6 -- VAO Attribute Setup**
+>
+> In OpenGL 3.3, `glVertexAttribPointer` combines format and binding into one call, and requires the VBO to be bound to `GL_ARRAY_BUFFER` at the time of the call. In 4.6, format and binding are separate operations on a named VAO. This means you can change which buffer a VAO reads from without re-specifying the format -- useful for buffer streaming.
+
+```csharp
+// Geode.Rendering/Buffers/VertexArrayObject.cs
+//
+// A Vertex Array Object that binds vertex data (VBO), index data (EBO),
+// and attribute layout into a single drawable unit.
+//
+// Uses DSA: glCreateVertexArrays, glVertexArrayAttribFormat,
+// glVertexArrayVertexBuffer, glVertexArrayElementBuffer.
+//
+// Book Chapter 3, Section 3.5.
+// OpenGlobe: Source/Renderer/GL3x/VertexArray/VertexArrayGL3x.cs
+
+using Silk.NET.OpenGL;
+using System;
+
+namespace Geode.Rendering.Buffers
+{
+    /// <summary>
+    /// A Vertex Array Object that owns a VBO and EBO and describes the vertex layout.
+    /// Bind this VAO before issuing glDrawElements.
+    /// </summary>
+    public class VertexArrayObject : IDisposable
+    {
+        private readonly GL _gl;
+        private readonly uint _handle;
+        private readonly BufferObject<float> _vbo;
+        private readonly BufferObject<uint> _ebo;
+        private readonly int _indexCount;
+
+        /// <summary>The raw GL VAO handle.</summary>
+        public uint Handle => _handle;
+
+        /// <summary>The number of indices in the element buffer.</summary>
+        public int IndexCount => _indexCount;
+
+        /// <summary>
+        /// Creates a VAO with the given vertex data, index data, and attribute layout.
+        /// </summary>
+        /// <param name="gl">The Silk.NET OpenGL context.</param>
+        /// <param name="vertices">Interleaved vertex data (floats).</param>
+        /// <param name="indices">Triangle indices (unsigned ints).</param>
+        /// <param name="attributes">
+        /// Attribute descriptors in order. The stride is computed automatically
+        /// by summing all component counts * sizeof(float).
+        /// Example: [VertexAttrib(0, 3), VertexAttrib(1, 3)] describes
+        /// a vertex with position (vec3) + color (vec3) = 6 floats = 24 bytes stride.
+        /// </param>
+        public VertexArrayObject(GL gl, float[] vertices, uint[] indices,
+            params VertexAttrib[] attributes)
+        {
+            _gl = gl;
+            _indexCount = indices.Length;
+
+            // Create the VBO and EBO (data is uploaded immediately)
+            _vbo = new BufferObject<float>(gl, vertices);
+            _ebo = new BufferObject<uint>(gl, indices);
+
+            // DSA: Create the VAO without binding
+            _handle = _gl.CreateVertexArray();
+
+            // Compute stride: total floats per vertex * sizeof(float)
+            int totalFloats = 0;
+            foreach (VertexAttrib attrib in attributes)
+                totalFloats += attrib.Components;
+            uint stride = (uint)(totalFloats * sizeof(float));
+
+            // Bind the VBO to binding point 0 of this VAO.
+            // The offset is 0 (start of buffer) and stride is the total vertex size.
+            _gl.VertexArrayVertexBuffer(_handle, 0, _vbo.Handle, 0, stride);
+
+            // Attach the EBO to this VAO.
+            _gl.VertexArrayElementBuffer(_handle, _ebo.Handle);
+
+            // Set up each attribute's format and enable it.
+            uint offset = 0;
+            foreach (VertexAttrib attrib in attributes)
+            {
+                // Describe the attribute: index, component count, type, normalized, offset
+                _gl.VertexArrayAttribFormat(
+                    _handle,
+                    attrib.Index,
+                    attrib.Components,
+                    VertexAttribType.Float,
+                    false,
+                    offset);
+
+                // Associate this attribute with binding point 0 (where our VBO is)
+                _gl.VertexArrayAttribBinding(_handle, attrib.Index, 0);
+
+                // Enable the attribute
+                _gl.EnableVertexArrayAttrib(_handle, attrib.Index);
+
+                // Advance offset for the next attribute
+                offset += (uint)(attrib.Components * sizeof(float));
+            }
+        }
+
+        /// <summary>
+        /// Deletes the VAO and its owned VBO and EBO.
+        /// </summary>
+        public void Dispose()
+        {
+            _gl.DeleteVertexArray(_handle);
+            _vbo.Dispose();
+            _ebo.Dispose();
+        }
+    }
+}
+```
+
+**Line count:** ~80 lines for VertexArrayObject, ~40 for BufferObject, ~3 for VertexAttrib.
+
+**The key insight** is that `VertexArrayObject` *owns* its buffers. When the VAO is disposed, the buffers are disposed too. This prevents resource leaks and simplifies the caller's lifetime management -- they only need to track one object.
+
+---
+
+## Section 14: Vertex Data Layouts
+
+*Corresponds to Book Chapter 3, Section 3.5.3*
+
+This is a conceptual section -- no new files. It explains the three approaches to organizing vertex data in GPU buffers and justifies our choice.
+
+### Three Approaches
+
+**Approach 1: Separate Buffers** -- one buffer per attribute.
+
+```
+VBO 0 (positions): [P0 P1 P2 P3 P4 ...]
+VBO 1 (normals):   [N0 N1 N2 N3 N4 ...]
+VBO 2 (texcoords): [T0 T1 T2 T3 T4 ...]
+```
+
+Pros: Easy to update one attribute without touching others. Flexible.
+Cons: Three separate buffer binds per draw call. Poor cache performance -- reading vertex 0 requires three separate cache lines.
+
+**Approach 2: Non-Interleaved (Array of Structs in a single buffer)**
+
+```
+VBO: [P0 P1 P2 ... Pn | N0 N1 N2 ... Nn | T0 T1 T2 ... Tn]
+```
+
+Pros: Single buffer bind. Can update one attribute range.
+Cons: Still poor cache performance for reading complete vertices.
+
+**Approach 3: Interleaved (Struct of Arrays pattern)**
+
+```
+VBO: [P0 N0 T0 | P1 N1 T1 | P2 N2 T2 | ...]
+```
+
+Pros: Reading vertex N loads all its attributes into a single cache line. Best performance for static geometry. Single buffer bind.
+Cons: Cannot update one attribute without re-uploading the entire vertex.
+
+### Our Choice: Interleaved
+
+For a virtual globe, terrain and imagery tiles are generated on the CPU, uploaded to the GPU once, and drawn many times without modification (until the tile is replaced by a higher-LOD version). This is the ideal case for interleaved layout: maximum cache performance during the many draw calls, no penalty from the write-once upload.
+
+### GlobeVertex (Conceptual)
+
+When we build the globe tessellator in Part IV, each vertex will have this layout:
+
+```
+GlobeVertex (32 bytes total):
+  ├── Position  (vec3, 12 bytes)  -- ECEF position in meters
+  ├── Normal    (vec3, 12 bytes)  -- Geodetic surface normal (unit vector)
+  └── TexCoord  (vec2,  8 bytes)  -- Texture coordinates (longitude/latitude mapped to [0,1])
+```
+
+This maps to three vertex attributes:
+```csharp
+new VertexAttrib(0, 3),  // position: location 0, 3 components
+new VertexAttrib(1, 3),  // normal:   location 1, 3 components
+new VertexAttrib(2, 2),  // texcoord: location 2, 2 components
+```
+
+Total stride: 32 bytes. At 1024 vertices per tile edge (a high-detail terrain tile), that is 1024 * 1024 * 32 = 33,554,432 bytes = 32 MB per tile. This is large, which is why LOD management (Part IV) is critical.
+
+---
+
+## Section 14.5: Meshes
+
+*Corresponds to Book Chapter 3, Section 3.5.6*
+
+*OpenGlobe source: `Source/Core/Geometry/Mesh.cs`, `Source/Core/Geometry/VertexAttribute.cs`, `Source/Core/Geometry/IndicesBase.cs`, and the family of concrete vertex-attribute subclasses.*
+
+This is a design section -- no `.cs` files yet. It specifies the shape of `Mesh` and its surrounding types so that when Part IV tessellators start producing geometry, the bridge to the Rendering layer is already decided.
+
+### Why Mesh lives in `Geode.Core`, not `Geode.Rendering`
+
+A `Mesh` is pure system-memory geometry: vertex positions, normals, texture coordinates, triangle indices. **It holds no GL handles, no buffer IDs, nothing GPU-backed.** That's deliberate.
+
+Putting `Mesh` in `Geode.Core` -- the assembly that has zero GL dependencies -- buys three properties:
+
+1. **Thread safety.** A globe tessellator (§21) or terrain-height generator runs on a background thread. GL contexts are bound to one thread; if `Mesh` held a GPU buffer it couldn't be built off-thread. Keeping Mesh pure CPU data means a worker thread can produce a complete Mesh and hand it to the render thread for GPU upload later.
+
+2. **Testability.** Every geometry generator can be unit-tested without a GL context. Build a Mesh, assert on its vertex positions. No window, no Silk.NET, no `OpenGLContext`.
+
+3. **Backend independence.** Nothing in `Mesh` assumes OpenGL. If we ever add a Vulkan or D3D backend, the tessellators and terrain code don't move -- only the Rendering-layer code that turns a `Mesh` into a `VertexArrayObject` gets a sibling implementation.
+
+This is exactly the pattern the book prescribes: Mesh is the **CPU-side bridge** between geometry producers and the renderer.
+
+### Class structure
+
+The design is three intertwined types:
+
+**`VertexAttribute`** -- abstract base for one named attribute on a Mesh. Generic subclasses carry strongly typed value lists.
+
+```csharp
+// Geode.Core/Geometry/VertexAttribute.cs
+
+namespace Geode.Core.Geometry
+{
+    /// <summary>
+    /// Abstract base for a named vertex attribute ("position", "normal", etc.).
+    /// Concrete subclasses ({VertexAttributeFloatVector3}, etc.) store the actual
+    /// per-vertex values.
+    /// </summary>
+    public abstract class VertexAttribute
+    {
+        public string Name { get; }
+        public VertexAttributeType Datatype { get; }
+        public abstract int Count { get; }  // number of vertices
+
+        protected VertexAttribute(string name, VertexAttributeType datatype)
+        {
+            Name = name;
+            Datatype = datatype;
+        }
+    }
+
+    /// <summary>
+    /// A vertex attribute with a typed value list. T is the per-vertex element
+    /// type (Vector3, Vector2, float, byte, etc.).
+    /// </summary>
+    public abstract class VertexAttribute<T> : VertexAttribute
+    {
+        public IList<T> Values { get; }
+
+        protected VertexAttribute(string name, VertexAttributeType datatype, int capacity)
+            : base(name, datatype)
+        {
+            Values = new List<T>(capacity);
+        }
+
+        public override int Count => Values.Count;
+    }
+}
+```
+
+**`VertexAttributeType`** -- enum identifying the GLSL type the values will populate:
+
+```csharp
+public enum VertexAttributeType
+{
+    UnsignedByte,
+    HalfFloat,
+    HalfFloatVector2, HalfFloatVector3, HalfFloatVector4,
+    Float,
+    FloatVector2, FloatVector3, FloatVector4,
+
+    // Emulated doubles -- produces TWO float attributes (high + low) when
+    // uploaded. The tessellator writes Vector3D values; the Rendering layer's
+    // Mesh-to-VAO converter splits them into two float vec3 streams for
+    // GPU RTE / DSFP (Section 27).
+    EmulatedDoubleVector3,
+}
+```
+
+**Concrete attribute classes** are one-liners per (type, datatype) pair:
+
+```csharp
+public sealed class VertexAttributeFloatVector3 : VertexAttribute<Vector3>
+{
+    public VertexAttributeFloatVector3(string name, int capacity = 0)
+        : base(name, VertexAttributeType.FloatVector3, capacity) { }
+}
+
+public sealed class VertexAttributeDoubleVector3 : VertexAttribute<Vector3D>
+{
+    public VertexAttributeDoubleVector3(string name, int capacity = 0)
+        : base(name, VertexAttributeType.EmulatedDoubleVector3, capacity) { }
+}
+
+// Siblings for Vector2/Vector4/float/UnsignedByte as needed.
+```
+
+**`VertexAttributeCollection`** -- a named dictionary of attributes owned by a Mesh:
+
+```csharp
+public sealed class VertexAttributeCollection
+{
+    private readonly Dictionary<string, VertexAttribute> _byName = new();
+
+    public VertexAttribute this[string name] => _byName[name];
+    public void Add(VertexAttribute attribute) => _byName[attribute.Name] = attribute;
+    public bool Contains(string name) => _byName.ContainsKey(name);
+    public IEnumerable<VertexAttribute> All => _byName.Values;
+}
+```
+
+**`IndicesBase`** -- abstract; concrete variants for UnsignedByte / UnsignedShort / UnsignedInt. Which one a mesh uses depends on vertex count:
+
+```csharp
+public abstract class IndicesBase
+{
+    public IndicesType Datatype { get; }
+    public abstract int Count { get; }
+    protected IndicesBase(IndicesType datatype) { Datatype = datatype; }
+}
+
+public sealed class IndicesUnsignedInt : IndicesBase
+{
+    public IList<uint> Values { get; } = new List<uint>();
+    public IndicesUnsignedInt() : base(IndicesType.UnsignedInt) { }
+    public override int Count => Values.Count;
+}
+
+// Similarly IndicesUnsignedShort for meshes < 65,536 vertices (half the memory)
+// and IndicesUnsignedByte for small meshes.
+```
+
+Choosing the smallest workable index type matters at scale: a terrain tile with 60,000 vertices fits in `ushort`, halving the index-buffer memory vs `uint`.
+
+**`Mesh`** -- pulls it together:
+
+```csharp
+// Geode.Core/Geometry/Mesh.cs
+using Geode.Core.Geometry;
+
+namespace Geode.Core.Geometry
+{
+    public sealed class Mesh
+    {
+        public VertexAttributeCollection Attributes { get; } = new();
+        public IndicesBase? Indices { get; set; }                          // null = non-indexed
+        public PrimitiveType PrimitiveType { get; set; } = PrimitiveType.Triangles;
+        public WindingOrder FrontFaceWindingOrder { get; set; } = WindingOrder.CounterClockwise;
+    }
+}
+```
+
+Note `PrimitiveType` and `WindingOrder` are Core-level enums matching the Rendering-layer names. If sharing them between assemblies is awkward, the Rendering-layer `CreateVertexArray` converts at the bridge.
+
+### The bridge: `Context.CreateVertexArray(mesh, shader, bufferHint)`
+
+Book design: adding a method on `Context` (our `RenderContext`) that takes a Mesh plus a shader program and produces a `VertexArrayObject`. The method:
+
+1. Walks the shader's vertex attributes (discovered at link time via `glGetActiveAttrib` — similar to our uniform scan) to learn each attribute's `layout(location = N)`.
+2. For each named attribute in `mesh.Attributes`, matches it to the shader attribute of the same name.
+3. Allocates a `BufferObject<byte>` sized for the interleaved layout, packs the attribute values into it, uploads once.
+4. Allocates the index buffer (type chosen from `mesh.Indices.Datatype`).
+5. Constructs a `VertexArrayObject` wiring attribute formats to locations.
+6. Handles `EmulatedDoubleVector3` specially: produces two float vec3 streams (high + low) and wires both to their matching shader attributes (e.g., `positionHigh` and `positionLow`).
+
+```csharp
+// Sketch on RenderContext:
+public VertexArrayObject CreateVertexArray(Mesh mesh,
+                                           ShaderProgram shader,
+                                           BufferHint bufferHint);
+
+public enum BufferHint
+{
+    StaticDraw,   // upload once, draw many times (tile geometry, static meshes)
+    DynamicDraw,  // upload occasionally (morphing terrain between LODs)
+    StreamDraw,   // upload every frame (skinned meshes, particle systems)
+}
+```
+
+This replaces the current `new VertexArrayObject(gl, float[], uint[], params VertexAttrib[])` constructor for any geometry that comes from a Mesh producer. The raw `float[]` ctor stays available for hand-crafted test geometry like the triangle demo (§20).
+
+### Why the name-based shader-to-mesh matching
+
+The bridge works because the shader's `in vec3 position;` declaration and the mesh's `new VertexAttributeFloatVector3("position")` share a string key. That means:
+
+- Tessellators don't know or care about `layout(location = N)` -- they just name their outputs.
+- Shaders don't know the `Mesh` API -- they just declare inputs by name.
+- The renderer connects them at `CreateVertexArray` time.
+
+Compare to hand-crafted geometry where the caller passes `new VertexAttrib(0, 3)` and has to know the shader expects position at location 0. That works for one shader; it scales badly when you have many tessellators feeding many shaders.
+
+### What to implement when
+
+| Need | When to build |
+|---|---|
+| `VertexAttributeType` enum + `VertexAttribute` + `VertexAttribute<T>` | Now, if you want a clean §21 tessellator |
+| `VertexAttributeFloatVector3` (and vec2/vec4/float siblings) | Same -- the minimum set §21 produces |
+| `IndicesBase` + `IndicesUnsignedInt` | §21 (indexed triangles) |
+| `IndicesUnsignedShort` | §22+ when a single tile fits under 65k vertices |
+| `Mesh` + `VertexAttributeCollection` | §21 |
+| `RenderContext.CreateVertexArray(mesh, shader, bufferHint)` | §21 -- the tessellator returns a Mesh, the renderer turns it into a VAO |
+| `VertexAttributeDoubleVector3` + `EmulatedDoubleVector3` handling | §27 (DSFP/RTE vertex transform precision) |
+
+For now, the triangle demo in §20 can keep using the hand-crafted `VertexArrayObject(GL, float[], uint[], VertexAttrib[])` ctor. When you build the globe tessellator in §21 it will naturally want a Mesh-shaped API, which is when these Core-layer types earn their place.
+
+### Summary of design principles
+
+- **Mesh lives in `Geode.Core`.** Zero GL. Zero threading constraints beyond ordinary mutable-list safety.
+- **Named attributes**, not positional. The name is the contract between producers (tessellators) and consumers (shaders).
+- **Strongly typed values.** `VertexAttribute<Vector3>` stores `IList<Vector3>`. No raw float arrays on the Mesh side -- only at the GPU upload boundary.
+- **Explicit indices type.** Use the smallest type that fits; halves memory for large tile sets.
+- **`EmulatedDoubleVector3` is a first-class attribute type.** Chapter 5's DSFP RTE already influences the Mesh design; the alternative is bolting on special cases later.
+- **The Rendering layer does the packing.** Mesh is a structure-of-arrays on the CPU; the bridge packs it into an interleaved GPU buffer. The producer doesn't care about GPU memory layout.
+
+---
+
+## Section 13: Textures
+
+*Corresponds to Book Chapter 3, Section 3.6*
+
+*OpenGlobe source: `Source/Renderer/Texture2DDescription.cs`, `Source/Renderer/TextureFormat.cs`, `Source/Renderer/Texture2D.cs`, `Source/Renderer/WritePixelBuffer.cs`, `Source/Renderer/ReadPixelBuffer.cs`, `Source/Renderer/TextureSampler.cs`, `Source/Renderer/TextureUnit.cs`, `Source/Renderer/GL3x/Textures/Texture2DGL3x.cs`.*
+
+Textures are GPU-resident images sampled by fragment shaders. The book splits §3.6 into three topics: (1) **textures and pixel buffers** -- the data flow from system memory to the GPU and back; (2) **samplers** -- the filtering and wrapping rules applied when a shader reads from a texture; (3) **rendering with textures** -- the `Context.TextureUnits[]` collection that connects textures + samplers to the shader's sampler uniforms, enabling multitexturing.
+
+Geode follows all three. The current `Texture2D.cs` is the minimum viable starter -- RGBA8 only, sampler parameters fixed at creation, no pixel buffers, no read-back -- and this section specifies the full book-faithful surface that it grows into. Each sub-section below says what to add and when.
+
+> **3.3 vs 4.6 -- Texture Creation**
+>
+> In OpenGL 3.3, texture creation requires binding: `glGenTextures` + `glBindTexture(GL_TEXTURE_2D, handle)` + `glTexImage2D(...)`. Any other code that binds `GL_TEXTURE_2D` between your gen and your tex calls corrupts your setup. With DSA, `glCreateTextures(GL_TEXTURE_2D)` + `glTextureStorage2D(handle, ...)` operates directly on the handle -- no binding, no corruption risk. Every GL call in this section uses the DSA variants.
+
+---
+
+### 13.1 Texture2DDescription
+
+A `Texture2DDescription` is an immutable specification of a texture -- everything you need to know to create one, and everything a created texture reports back to you. Book Listing 3.25 defines it as:
+
+```csharp
+// Geode.Rendering/Texture2DDescription.cs
+
+using System;
+
+namespace Geode.Rendering
+{
+    /// <summary>
+    /// Immutable description of a Texture2D -- resolution, internal format,
+    /// mipmap policy. Passed to Texture2D's constructor. Exposed from
+    /// <see cref="Texture2D.Description"/> so callers can query a texture's
+    /// properties without tracking them separately.
+    /// </summary>
+    public readonly record struct Texture2DDescription(
+        int Width,
+        int Height,
+        TextureFormat TextureFormat,
+        bool GenerateMipmaps = false) : IEquatable<Texture2DDescription>
+    {
+        /// <summary>True if this format can be attached to a framebuffer's color attachment (see Section 19.5).</summary>
+        public bool ColorRenderable => TextureFormat.IsColorRenderable();
+
+        /// <summary>True if this format can be attached as a framebuffer's depth attachment.</summary>
+        public bool DepthRenderable => TextureFormat.IsDepthRenderable();
+
+        /// <summary>True if this format can be attached as a framebuffer's combined depth-stencil attachment.</summary>
+        public bool DepthStencilRenderable => TextureFormat.IsDepthStencilRenderable();
+    }
+}
+```
+
+The renderability flags drive the format-validation in `Framebuffer` (Section 19.5). Keeping them on the description means a `Framebuffer.ColorAttachments[i] = texture` assignment can check `texture.Description.TextureFormat.IsColorRenderable()` and throw immediately rather than letting GL surface an opaque "framebuffer incomplete" error at the next draw.
+
+---
+
+### 13.2 TextureFormat enum
+
+The set of internal formats the engine supports. Each value maps one-to-one to a `Silk.NET.OpenGL.SizedInternalFormat`. The book's canonical list (Listing 3.25) covers the common color, float, depth, and depth-stencil formats:
+
+```csharp
+// Geode.Rendering/TextureFormat.cs
+
+namespace Geode.Rendering
+{
+    /// <summary>
+    /// Sized internal formats supported by Geode's Texture2D. Each value
+    /// corresponds directly to an OpenGL sized internal format.
+    /// </summary>
+    public enum TextureFormat
+    {
+        // 8-bit per channel color
+        Red8,
+        RedGreenBlue8,
+        RedGreenBlueAlpha8,
+
+        // 16-bit per channel color
+        Red16,
+        RedGreenBlue16,
+        RedGreenBlueAlpha16,
+
+        // Float color (HDR)
+        Red16f,         Red32f,
+        RedGreen16f,    RedGreen32f,
+        RedGreenBlue16f, RedGreenBlue32f,
+        RedGreenBlueAlpha16f, RedGreenBlueAlpha32f,
+
+        // sRGB
+        Srgb8,
+        Srgb8Alpha8,
+
+        // Depth / depth-stencil (for framebuffer attachments, Section 19.5)
+        Depth16,
+        Depth24,
+        Depth32,
+        Depth32f,
+        Depth24Stencil8,
+        Depth32fStencil8,
+    }
+}
+```
+
+Internally `Texture2D` maps `TextureFormat` to `SizedInternalFormat` via a private switch. Keeping the Geode enum separate from `Silk.NET.OpenGL.SizedInternalFormat` insulates higher layers (Mesh, Framebuffer, application code) from the underlying GL binding.
+
+---
+
+### 13.3 Format flags (renderability)
+
+`Texture2DDescription.ColorRenderable` etc. delegate to extension methods on `TextureFormat`. Section 19.5 already defined these over `Silk.NET.OpenGL.InternalFormat`; once we move to the Geode `TextureFormat` enum, port them to extension methods on the Geode type:
+
+```csharp
+// Geode.Rendering/TextureFormatFlags.cs
+
+namespace Geode.Rendering
+{
+    public static class TextureFormatFlags
+    {
+        public static bool IsColorRenderable(this TextureFormat f) => f switch
+        {
+            TextureFormat.Red8 or TextureFormat.RedGreenBlue8 or TextureFormat.RedGreenBlueAlpha8
+                or TextureFormat.Red16 or TextureFormat.RedGreenBlue16 or TextureFormat.RedGreenBlueAlpha16
+                or TextureFormat.Red16f or TextureFormat.Red32f
+                or TextureFormat.RedGreen16f or TextureFormat.RedGreen32f
+                or TextureFormat.RedGreenBlue16f or TextureFormat.RedGreenBlue32f
+                or TextureFormat.RedGreenBlueAlpha16f or TextureFormat.RedGreenBlueAlpha32f
+                or TextureFormat.Srgb8 or TextureFormat.Srgb8Alpha8 => true,
+            _ => false
+        };
+
+        public static bool IsDepthRenderable(this TextureFormat f) => f switch
+        {
+            TextureFormat.Depth16 or TextureFormat.Depth24
+                or TextureFormat.Depth32 or TextureFormat.Depth32f => true,
+            _ => false
+        };
+
+        public static bool IsDepthStencilRenderable(this TextureFormat f) => f switch
+        {
+            TextureFormat.Depth24Stencil8 or TextureFormat.Depth32fStencil8 => true,
+            _ => false
+        };
+    }
+}
+```
+
+The Framebuffer section's current `TextureFormatFlags` (which extends `InternalFormat`) stays valid while the simpler `Texture2D(GL, int, int, byte[])` constructor is still in use. When `Texture2D` switches to `Texture2DDescription`, migrate `Framebuffer` to check `texture.Description.TextureFormat` instead.
+
+---
+
+### 13.4 Pixel buffers -- `WritePixelBuffer` and `ReadPixelBuffer`
+
+Pixel buffers are the book's (and GL's) mechanism for **asynchronous** texture uploads and downloads. Without a pixel buffer, `glTextureSubImage2D` blocks until the upload completes -- fine for a one-off test texture but unacceptable for streaming hundreds of tile textures per frame. With a pixel buffer, the upload is queued; the CPU can move on while the GPU DMA's the bytes in the background.
+
+Two types, separated by direction of flow (Book Fig 3.16):
+
+- **`WritePixelBuffer`** -- system memory → texture. Backed by a GL `PIXEL_UNPACK_BUFFER`.
+- **`ReadPixelBuffer`** -- texture → system memory. Backed by a GL `PIXEL_PACK_BUFFER`.
+
+Both look like untyped vertex buffers (see [§12 BufferObject](#section-12-vertex-buffers-and-vertex-arrays)): they carry raw bytes with generic `CopyFromSystemMemory<T>` / `CopyToSystemMemory<T>` overloads so callers don't cast. They also support `CopyFromBitmap` / `CopyToBitmap` because image data often lives in an image type (e.g., a `StbImageSharp.ImageResult`).
+
+```csharp
+// Geode.Rendering/PixelBufferHint.cs
+
+namespace Geode.Rendering
+{
+    /// <summary>
+    /// Hint about how a pixel buffer will be used. Maps to GL's buffer usage hint;
+    /// affects how the driver places the storage (streaming vs. persistent).
+    /// </summary>
+    public enum PixelBufferHint
+    {
+        Stream,   // write once, use once -- tile upload
+        Static,   // write once, use many times -- UI texture
+        Dynamic,  // rewritten frequently -- video frame upload
+    }
+}
+```
+
+```csharp
+// Geode.Rendering/WritePixelBuffer.cs (sketch)
+
+namespace Geode.Rendering
+{
+    /// <summary>
+    /// Raw-byte GPU buffer used to stage pixel data for a texture upload.
+    /// Produced by <see cref="RenderContext.CreateWritePixelBuffer"/>; consumed
+    /// by <see cref="Texture2D.CopyFromBuffer"/>.
+    /// </summary>
+    public abstract class WritePixelBuffer : System.IDisposable
+    {
+        public abstract PixelBufferHint UsageHint { get; }
+        public abstract int SizeInBytes { get; }
+
+        public abstract void CopyFromSystemMemory<T>(T[] bufferInSystemMemory) where T : unmanaged;
+        public abstract void CopyFromSystemMemory<T>(T[] bufferInSystemMemory, int destinationOffsetInBytes) where T : unmanaged;
+        public abstract void CopyFromBitmap(StbImageSharp.ImageResult bitmap);
+
+        public abstract T[] CopyToSystemMemory<T>() where T : unmanaged;
+        public abstract void Dispose();
+    }
+}
+```
+
+`ReadPixelBuffer` is the mirror: `CopyFromBitmap` → `CopyToBitmap`, `CopyFromSystemMemory` → `CopyToSystemMemory`, and its contents are populated by `Texture2D.CopyToBuffer(format, datatype)` when reading back from the GPU.
+
+**On the `Bitmap` divergence.** The book uses `System.Drawing.Bitmap`, which is Windows-only in modern .NET. Geode uses `StbImageSharp.ImageResult` (already a dependency), which is cross-platform. Same contract, different type.
+
+**Why separate write / read types?** Book Listing 3.26 explains: a method like `Texture2D.CopyFromBuffer` should only accept a write buffer, and a method like `Texture2D.CopyToBuffer` should only return a read buffer. A single `PixelBuffer` type would force runtime checks; separate types give compile-time safety. See Book §3.6.1's callout on vertex-buffer-vs-pixel-buffer polymorphism for the deeper design discussion.
+
+---
+
+### 13.5 `ImageFormat` and `ImageDatatype`
+
+When `Texture2D.CopyFromBuffer(buffer, format, datatype)` runs, GL needs to know how to interpret the raw bytes in the pixel buffer. Two enums describe this:
+
+```csharp
+// Geode.Rendering/ImageFormat.cs
+
+namespace Geode.Rendering
+{
+    /// <summary>Channel layout of the bytes in a pixel buffer.</summary>
+    public enum ImageFormat
+    {
+        Red,
+        RedGreen,
+        RedGreenBlue,
+        RedGreenBlueAlpha,
+        BlueGreenRed,           // for BMP files
+        BlueGreenRedAlpha,
+        DepthComponent,
+        DepthStencil,
+    }
+}
+```
+
+```csharp
+// Geode.Rendering/ImageDatatype.cs
+
+namespace Geode.Rendering
+{
+    /// <summary>Scalar type of each channel in a pixel buffer.</summary>
+    public enum ImageDatatype
+    {
+        UnsignedByte,
+        Byte,
+        UnsignedShort,
+        Short,
+        UnsignedInt,
+        Int,
+        Float,
+        HalfFloat,
+    }
+}
+```
+
+GL converts from `(ImageFormat, ImageDatatype)` to the internal `TextureFormat` the texture was created with. The caller's buffer format doesn't have to match the texture's internal format -- an RGBA8 texture can be populated from a `(RedGreenBlueAlpha, Float)` buffer, with the driver doing the conversion.
+
+---
+
+### 13.6 `Texture2D` full surface
+
+Everything above feeds into `Texture2D`. The book's interface (Listing 3.27) is:
+
+```csharp
+// Geode.Rendering/Texture2D.cs (target surface)
+
+using System;
+
+namespace Geode.Rendering
+{
+    public class Texture2D : IDisposable
+    {
+        public uint Handle { get; }
+
+        /// <summary>The description this texture was created with. Immutable.</summary>
+        public Texture2DDescription Description { get; }
+
+        // ---- Upload (WritePixelBuffer -> Texture) -----------------------
+
+        /// <summary>Replace the entire level-0 image.</summary>
+        public void CopyFromBuffer(
+            WritePixelBuffer pixelBuffer,
+            ImageFormat format,
+            ImageDatatype dataType);
+
+        /// <summary>Replace a sub-rectangle of the level-0 image, with explicit row alignment.</summary>
+        public void CopyFromBuffer(
+            WritePixelBuffer pixelBuffer,
+            int xOffset, int yOffset,
+            int width, int height,
+            ImageFormat format,
+            ImageDatatype dataType,
+            int rowAlignment);
+
+        // ---- Download (Texture -> ReadPixelBuffer) ----------------------
+
+        public ReadPixelBuffer CopyToBuffer(ImageFormat format, ImageDatatype dataType);
+
+        // ---- Debugging -------------------------------------------------
+
+        /// <summary>Save the level-0 image to disk (PNG). Useful for debugging shader output and tile content.</summary>
+        public void Save(string filename);
+
+        public void Dispose();
+    }
+}
+```
+
+Internally the constructor runs:
+
+1. `glCreateTextures(GL_TEXTURE_2D)` -- DSA create.
+2. `glTextureStorage2D(handle, mipLevels, sizedInternalFormat, w, h)` -- allocate immutable storage. `mipLevels` is `1 + floor(log2(max(w, h)))` when `Description.GenerateMipmaps`, else `1`.
+3. If initial pixel data is supplied via a `WritePixelBuffer`: `glTextureSubImage2D(handle, 0, 0, 0, w, h, pixelFormat, pixelType, offset)` while the pixel buffer is bound to `GL_PIXEL_UNPACK_BUFFER`.
+4. If `Description.GenerateMipmaps`: `glGenerateTextureMipmap(handle)` after the initial upload.
+
+Sampler parameters (filter / wrap / anisotropy) are **not** set on the texture -- they live in a separate `TextureSampler` object, per §13.8.
+
+---
+
+### 13.7 Texture Rectangles
+
+A **texture rectangle** is a 2D texture that uses **unnormalized** texture coordinates -- if the texture is 512x256, valid coordinates are `(0..512, 0..256)` instead of `(0..1, 0..1)`. This makes some algorithms simpler -- the book flags ray-casting of height fields in §11.2.3 as the motivating case.
+
+Constraints:
+- **No mipmaps.**
+- **No repeat wrapping** (only clamp variants).
+
+Implementation: the same `Texture2D` class, constructed via `RenderContext.CreateTexture2DRectangle(description)` which calls `glCreateTextures(GL_TEXTURE_RECTANGLE)` instead of `GL_TEXTURE_2D`. The factory enforces the constraints (throw if `GenerateMipmaps` is true, reject `Repeat` on the attached sampler).
+
+Implementation priority: deferred until §11 terrain ray-casting.
+
+---
+
+### 13.8 `TextureSampler` -- sampling state, decoupled from textures
+
+The book (§3.6.2, Fig 3.17) and modern GL both decouple the texture (what data is stored) from the sampler (how a shader reads it). The same `Texture2D` can be sampled linear-clamp in one pass and nearest-repeat in the next -- no need to duplicate the texture data.
+
+```csharp
+// Geode.Rendering/TextureSampler.cs
+
+using System;
+
+namespace Geode.Rendering
+{
+    public enum TextureMinificationFilter
+    {
+        Nearest,
+        Linear,
+        NearestMipmapNearest,
+        LinearMipmapNearest,
+        NearestMipmapLinear,
+        LinearMipmapLinear,   // trilinear -- highest quality minification
+    }
+
+    public enum TextureMagnificationFilter
+    {
+        Nearest,
+        Linear,
+    }
+
+    public enum TextureWrap
+    {
+        Clamp,           // GL_CLAMP_TO_EDGE
+        Repeat,          // GL_REPEAT
+        MirroredRepeat,  // GL_MIRRORED_REPEAT
+    }
+
+    public sealed class TextureSampler : IDisposable
+    {
+        public uint Handle { get; }
+        public TextureMinificationFilter MinificationFilter { get; }
+        public TextureMagnificationFilter MagnificationFilter { get; }
+        public TextureWrap WrapS { get; }
+        public TextureWrap WrapT { get; }
+        public float MaximumAnisotropy { get; }
+
+        internal TextureSampler(GL gl, TextureMinificationFilter min, TextureMagnificationFilter mag,
+                                TextureWrap wrapS, TextureWrap wrapT, float maxAnisotropy = 1.0f);
+
+        public void Dispose();
+    }
+}
+```
+
+Construction goes through a factory on `RenderContext` so the cache (§13.9) is consulted first:
+
+```csharp
+TextureSampler sampler = renderContext.CreateTexture2DSampler(
+    TextureMinificationFilter.Linear,
+    TextureMagnificationFilter.Linear,
+    TextureWrap.Repeat,
+    TextureWrap.Repeat);
+```
+
+Anisotropic filtering is controlled by `MaximumAnisotropy`. Values greater than 1 (up to the GL-reported maximum, typically 16) improve quality on obliquely-viewed surfaces -- textured terrain seen at a grazing angle, for example. Requires `GL_EXT_texture_filter_anisotropic` (core in 4.6).
+
+---
+
+### 13.9 Pre-made sampler collection
+
+The book notes that four sampler combinations cover 90% of uses. Put them on `RenderContext` so every call site gets the same instance instead of creating duplicates:
+
+```csharp
+// On RenderContext:
+
+public sealed class Samplers
+{
+    public TextureSampler LinearRepeat { get; }
+    public TextureSampler LinearClamp { get; }
+    public TextureSampler NearestRepeat { get; }
+    public TextureSampler NearestClamp { get; }
+}
+
+public Samplers Samplers { get; }  // populated in the constructor
+```
+
+At call sites this lets you write:
+
+```csharp
+renderContext.TextureUnits[0].Sampler = renderContext.Samplers.LinearClamp;
+```
+
+instead of:
+
+```csharp
+// Always creates a new sampler object
+renderContext.TextureUnits[0].Sampler = renderContext.CreateTexture2DSampler(
+    TextureMinificationFilter.Linear, TextureMagnificationFilter.Linear,
+    TextureWrap.Clamp, TextureWrap.Clamp);
+```
+
+See Book §3.6.2's "Try This" on a sampler cache: unlike shaders (where compilation is expensive), sampler state is tiny, so a full cache isn't usually worth it. The four pre-made instances are the pragmatic middle ground.
+
+---
+
+### 13.10 `Context.TextureUnits` -- multitexturing
+
+A shader can sample multiple textures in a single draw (day + night, diffuse + normal, diffuse + lightmap). GL exposes this as a fixed array of **texture units** -- numbered slots, each bindable to one texture + one sampler.
+
+```csharp
+// Additions to RenderContext:
+
+public sealed class TextureUnit
+{
+    public Texture2D? Texture { get; set; }
+    public TextureSampler? Sampler { get; set; }
+}
+
+public sealed class TextureUnits
+{
+    private readonly TextureUnit[] _slots;  // length = Device.NumberOfTextureUnits
+
+    public int Count => _slots.Length;
+    public TextureUnit this[int index] => _slots[index];
+}
+
+public TextureUnits TextureUnits { get; }
+public int NumberOfTextureUnits => TextureUnits.Count;  // typically 16 on 4.6
+```
+
+Before a draw, the application assigns textures and samplers:
+
+```csharp
+renderContext.TextureUnits[0].Texture = dayTexture;
+renderContext.TextureUnits[0].Sampler = renderContext.Samplers.LinearClamp;
+
+renderContext.TextureUnits[1].Texture = nightTexture;
+renderContext.TextureUnits[1].Sampler = renderContext.Samplers.LinearClamp;
+
+renderContext.Draw(primitiveType, drawState, sceneState);
+```
+
+`RenderContext.Draw` flushes any dirty unit assignments before issuing the GL draw, via `glBindTextureUnit(i, texture.Handle)` + `glBindSampler(i, sampler.Handle)`.
+
+**Connecting units to shader samplers.** Two options:
+
+1. **Link-automatic (`geode_texture0..geode_texture7`)**. Section 19's `TextureUniform` binds these to units 0..7 at link time, with no application code needed. Just declare `uniform sampler2D geode_texture0;` in the shader; `TextureUnits[0].Texture = dayTexture` is all the application needs.
+2. **Custom-named sampler**. For a shader-specific name like `u_dayTexture`, set the sampler uniform explicitly to the unit index:
+    ```csharp
+    ((Uniform<int>)shader.Uniforms["u_dayTexture"]).Value = 0;
+    renderContext.TextureUnits[0].Texture = dayTexture;
+    ```
+
+Either way, the contract is: the shader's sampler uniform holds a texture-unit index; `TextureUnits[index]` holds the actual texture + sampler that index refers to at draw time.
+
+**Why is the unit collection on `Context`, not `DrawState`?** Book §3.6.3 flags this as a question. Answer: GL texture-unit bindings are *context* state, not *draw* state. A `DrawState` describes a shader + VAO + render state bundle; two DrawStates can share textures. Putting `TextureUnits` on the context matches how GL actually works and lets the renderer avoid redundant rebinds when two draws use the same units.
+
+---
+
+### 13.11 Current implementation vs target surface
+
+The existing `Texture2D.cs` is the **minimum starter** -- one constructor (`(GL, int, int, byte[])`), hardcoded `SizedInternalFormat.Rgba8`, hardcoded sampler parameters baked into the texture, no pixel buffers, no read-back, no description property:
+
+```csharp
+public unsafe Texture2D(GL gl, int width, int height, byte[] pixels) { /* existing */ }
+public void Bind(uint unit) { /* glBindTextureUnit */ }
+public static Texture2D FromFile(GL gl, string path) { /* StbImageSharp */ }
+```
+
+To reach the full book surface above, extend in this order as consumers require:
+
+| When | Add |
+|---|---|
+| Before the first framebuffer (§19.5 needs format validation) | `Texture2DDescription`, `TextureFormat` enum, `TextureFormatFlags` on the new enum, `Description` property on `Texture2D`, new constructor `Texture2D(GL, Texture2DDescription, byte[]?)` |
+| First time a texture needs a non-default sampler | `TextureSampler`, `TextureMinificationFilter` / `TextureMagnificationFilter` / `TextureWrap` enums, `RenderContext.CreateTexture2DSampler`, pre-made `RenderContext.Samplers.{LinearRepeat, LinearClamp, NearestRepeat, NearestClamp}` |
+| First multitextured shader (§26 day/night globe is the natural forcing function) | `TextureUnit`, `TextureUnits`, `RenderContext.TextureUnits[]`, bind flush at top of `Draw` |
+| First tile-streaming pipeline (§22+) | `WritePixelBuffer`, `ReadPixelBuffer`, `PixelBufferHint`, `ImageFormat`, `ImageDatatype`, `Texture2D.CopyFromBuffer`, `Texture2D.CopyToBuffer` |
+| Debugging scenarios | `Texture2D.Save(string filename)` |
+| §11 terrain ray-casting | `RenderContext.CreateTexture2DRectangle` factory |
+
+The current `Texture2D.Bind(unit)` can stay as a convenience that forwards to `TextureUnits[unit].Texture = this` once the unit collection lands. Or it can be removed once call sites all go through `TextureUnits`.
+
+**The existing `FromFile` method** (StbImageSharp-backed) stays as the one-liner for loading images in demos; it internally calls the new `(GL, Texture2DDescription, byte[])` constructor once that exists. For production tile streaming, `FromFile` is replaced with a tile-provider pipeline that uses `WritePixelBuffer` + async I/O.
 
 ---
 

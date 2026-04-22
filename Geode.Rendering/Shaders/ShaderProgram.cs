@@ -37,6 +37,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using UniformType = Geode.Rendering.Uniforms.UniformType;
 using SilkUniformType = Silk.NET.OpenGL.UniformType;
+using Geode.Rendering.State;
 
 namespace Geode.Rendering.Shaders
 {

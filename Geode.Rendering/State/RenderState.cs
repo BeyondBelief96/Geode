@@ -6,7 +6,18 @@
 // Each sub-state is a small mutable class with a Clone() method so that
 // RenderState itself can be deep-copied cheaply.
 
-namespace Geode.Rendering;
+
+// Geode.Rendering/RenderState.cs
+//
+// A snapshot of every GPU pipeline state needed to draw geometry:
+// depth test, face culling, blending, scissor, rasterization mode, etc.
+//
+// Each sub-state is a small mutable class with a Clone() method so that
+// RenderState itself can be deep-copied cheaply.
+
+using Geode.Core.Geometry;
+
+namespace Geode.Rendering.State;
 
 // ──────────────────────────────────────────────
 //  Enumerations
@@ -47,17 +58,6 @@ public enum CullFace
     Back,
     /// <summary>Cull both front- and back-facing triangles.</summary>
     FrontAndBack
-}
-
-/// <summary>
-/// Vertex winding order used to determine a triangle's front face.
-/// </summary>
-public enum WindingOrder
-{
-    /// <summary>Clockwise-wound triangles are front-facing.</summary>
-    Clockwise,
-    /// <summary>Counter-clockwise-wound triangles are front-facing (OpenGL default).</summary>
-    CounterClockwise
 }
 
 /// <summary>
@@ -322,7 +322,7 @@ public class RenderState
     /// <summary>Scissor test configuration.</summary>
     public ScissorTest ScissorTest { get; set; } = new();
 
-    /// <summary>Polygon rasterization mode. Default: <see cref="Rendering.RasterizationMode.Fill"/>.</summary>
+    /// <summary>Polygon rasterization mode. Default: <see cref="RasterizationMode.Fill"/>.</summary>
     public RasterizationMode RasterizationMode { get; set; } = RasterizationMode.Fill;
 
     public RenderState() { }

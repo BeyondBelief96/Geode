@@ -1,8 +1,3 @@
-// Geode.Rendering/VertexAttribute.cs
-//
-// Describes a single vertex attribute (e.g., position, normal, texcoord)
-// by its shader location index and component count.
-
 namespace Geode.Rendering
 {
     /// <summary>
@@ -15,5 +10,5 @@ namespace Geode.Rendering
     /// <param name="Components">
     /// The number of components (1–4). For example, a <c>vec3</c> has 3 components.
     /// </param>
-    public readonly record struct VertexAttribute(uint Index, int Components);
+    public readonly record struct VertexAttrib(uint Index, int Components);
 }

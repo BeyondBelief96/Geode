@@ -1,4 +1,5 @@
 using Geode.Core;
+using Geode.Rendering.State;
 using Geode.Rendering.Uniforms;
 
 namespace Geode.Rendering.Shaders.Uniforms.DrawAutomaticUniforms

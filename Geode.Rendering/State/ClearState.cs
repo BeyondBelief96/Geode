@@ -6,7 +6,7 @@
 using System;
 using System.Numerics;
 
-namespace Geode.Rendering
+namespace Geode.Rendering.State
 {
     /// <summary>
     /// Flags that select which framebuffer attachments are cleared.

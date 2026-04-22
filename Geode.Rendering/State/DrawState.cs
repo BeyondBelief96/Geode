@@ -1,10 +1,10 @@
 using Geode.Rendering.Buffers;
 using Geode.Rendering.Shaders;
 
-namespace Geode.Rendering
+namespace Geode.Rendering.State
 {
     /// <summary>
-    /// Groups a <see cref="Rendering.RenderState"/>, <see cref="Shaders.ShaderProgram"/>,
+    /// Groups a <see cref="State.RenderState"/>, <see cref="Shaders.ShaderProgram"/>,
     /// and <see cref="Buffers.VertexArrayObject"/> into a single drawable unit.
     /// Pass this to the renderer to execute a draw call with the correct state.
     /// </summary>

@@ -1,6 +1,16 @@
-﻿using Geode.Rendering.Shaders;
+﻿using Geode.Core;
+using Geode.Core.Geometry;
+using Geode.Rendering.Buffers;
+using Geode.Rendering.Shaders;
+using Geode.Rendering.State;
+using Geode.Rendering.Textures;
 using Silk.NET.OpenGL;
 using System;
+using System.Collections.Generic;
+using System.Numerics;
+using System.Runtime.InteropServices;
+using GlPrimitiveType = Silk.NET.OpenGL.PrimitiveType;
+using PrimitiveType = Geode.Core.Geometry.PrimitiveType;
 
 namespace Geode.Rendering
 {
@@ -16,6 +26,13 @@ namespace Geode.Rendering
         /// See <see cref="Shaders.ShaderCache"/> for the model and Book Section 3.4.6.
         /// </summary>
         public ShaderCache Shaders { get; }
+
+        /// <summary>
+        /// Texture-unit binding table. Callers assign textures/samplers to units
+        /// via <c>TextureUnits[i].Texture = ...</c>; bindings are flushed to GL
+        /// once per draw. See <see cref="Textures.TextureUnits"/> and Book §3.6.
+        /// </summary>
+        public TextureUnits TextureUnits { get; }
 
         public RenderContext(GL gl)
         {
@@ -43,6 +60,10 @@ namespace Geode.Rendering
             // ShaderCache is a context-owned resource: it holds GL program handles,
             // which are only valid for this context's lifetime. Dispose(this) tears it down.
             Shaders = new ShaderCache(_gl);
+
+            // TextureUnits queries GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS now, so
+            // construct it after the GL context is fully set up.
+            TextureUnits = new TextureUnits(_gl);
         }
 
         /// <summary>
@@ -140,14 +161,15 @@ namespace Geode.Rendering
         public unsafe void Draw(PrimitiveType primitiveType, DrawState drawState, SceneState sceneState)
         {
             ApplyRenderState(drawState.RenderState);
+            TextureUnits.Clean();
             drawState.ShaderProgram.Bind(this, drawState, sceneState);
             _gl.BindVertexArray(drawState.VertexArrayObject.Handle);
 
             // null indices pointer -- offset 0 into the bound element buffer,
             // which is what we want for a simple "draw the whole VAO" call.
-            _gl.DrawElements(primitiveType,
+            _gl.DrawElements(ToGlPrimitiveType(primitiveType),
                 (uint)drawState.VertexArrayObject.IndexCount,
-                DrawElementsType.UnsignedInt, (void*)0);
+                drawState.VertexArrayObject.IndexType, (void*)0);
         }
 
         /// <summary>
@@ -164,11 +186,368 @@ namespace Geode.Rendering
             DrawState drawState, SceneState sceneState)
         {
             ApplyRenderState(drawState.RenderState);
+            TextureUnits.Clean();
             drawState.ShaderProgram.Bind(this, drawState, sceneState);
             _gl.BindVertexArray(drawState.VertexArrayObject.Handle);
 
-            _gl.DrawArrays(primitiveType, first, count);
+            _gl.DrawArrays(ToGlPrimitiveType(primitiveType), first, count);
         }
+
+        #region Mesh -> VAO Bridge
+
+        /// <summary>
+        /// Build a <see cref="VertexArrayObject"/> from a <see cref="Mesh"/> and the
+        /// shader program that will draw it. Matches mesh attributes to shader
+        /// attributes by name, packs the vertex data interleaved into a single VBO,
+        /// allocates a typed EBO, and wires attribute formats to shader locations
+        /// via DSA.
+        /// <para>
+        /// Lives on <see cref="RenderContext"/> rather than <see cref="Rendering.Device"/>
+        /// because VAO objects are not shared across GL contexts -- their lifetime is
+        /// bound to the context that created them. The underlying buffers (VBO/EBO)
+        /// <i>are</i> shareable, but the VAO binding them is not.
+        /// </para>
+        /// </summary>
+        /// <param name="mesh">Source geometry. Its attribute values and indices are read but not retained.</param>
+        /// <param name="shader">The shader program whose <c>in</c> attributes define which mesh attributes are needed and at which locations.</param>
+        /// <param name="bufferHint">Usage hint for the backing GPU buffers. Currently advisory -- <see cref="VertexBuffer"/> and <see cref="IndexBuffer"/> always use immutable storage with <c>DynamicStorageBit</c>.</param>
+        /// <remarks>
+        /// Name matching rules:
+        /// <list type="bullet">
+        ///   <item>Every active shader attribute must have a same-name mesh attribute.
+        ///     A missing match throws with a descriptive error.</item>
+        ///   <item><see cref="VertexAttributeType.EmulatedDoubleVector3"/> mesh
+        ///     attributes feed two shader attributes: <c>"nameHigh"</c> and
+        ///     <c>"nameLow"</c>. Both halves must be present in the shader or the
+        ///     call throws.</item>
+        /// </list>
+        /// </remarks>
+        public VertexArrayObject CreateVertexArray(Mesh mesh, ShaderProgram shader, BufferHint bufferHint)
+        {
+            Dictionary<string, ShaderAttribInfo> shaderAttribs = EnumerateShaderAttributes(shader);
+            List<AttributeBinding> bindings = BindMeshToShader(mesh, shaderAttribs);
+
+            // Pack attributes in ascending shader-location order for stable layout.
+            bindings.Sort((a, b) => a.Location.CompareTo(b.Location));
+
+            // Compute byte offsets and total stride.
+            uint offset = 0;
+            var formats = new InterleavedVertexAttribute[bindings.Count];
+            for (int i = 0; i < bindings.Count; i++)
+            {
+                AttributeBinding b = bindings[i];
+                formats[i] = new InterleavedVertexAttribute(
+                    b.Location, b.Components, b.Type, b.Normalized, offset);
+                bindings[i] = b with { Offset = offset };
+                offset += ComponentSizeBytes(b.Type) * (uint)b.Components;
+            }
+            uint stride = offset;
+
+            int vertexCount = GetVertexCount(mesh);
+            byte[] vboData = new byte[vertexCount * (int)stride];
+            Span<byte> vboSpan = vboData.AsSpan();
+            for (int v = 0; v < vertexCount; v++)
+            {
+                foreach (AttributeBinding b in bindings)
+                {
+                    Span<byte> dest = vboSpan.Slice((int)(v * stride + b.Offset));
+                    WriteVertexAttribute(dest, b.Source, v, b.Split);
+                }
+            }
+            var vbo = new VertexBuffer(_gl, bufferHint, vboData.Length);
+            vbo.CopyFromSystemMemory(vboData);
+
+            IndexBuffer? ebo = CreateElementBuffer(mesh, bufferHint);
+
+            return new VertexArrayObject(_gl, vbo, stride, ebo, formats);
+        }
+
+        private readonly record struct ShaderAttribInfo(
+            uint Location, int Components, VertexAttribType Type);
+
+        private record struct AttributeBinding(
+            uint Location,
+            int Components,
+            VertexAttribType Type,
+            bool Normalized,
+            VertexAttribute Source,
+            DoubleSplit Split,
+            uint Offset);
+
+        private enum DoubleSplit { None, High, Low }
+
+        private Dictionary<string, ShaderAttribInfo> EnumerateShaderAttributes(ShaderProgram shader)
+        {
+            _gl.GetProgram(shader.Handle, ProgramPropertyARB.ActiveAttributes, out int count);
+            _gl.GetProgram(shader.Handle, ProgramPropertyARB.ActiveAttributeMaxLength, out int maxLen);
+
+            var result = new Dictionary<string, ShaderAttribInfo>(count);
+            for (uint i = 0; i < (uint)count; i++)
+            {
+                _gl.GetActiveAttrib(shader.Handle, i, (uint)maxLen,
+                    out _, out _, out AttributeType glType, out string name);
+
+                // Builtins (gl_VertexID, gl_InstanceID) report as active but have
+                // no location; skip them silently.
+                int location = _gl.GetAttribLocation(shader.Handle, name);
+                if (location < 0) continue;
+
+                (VertexAttribType type, int components) = DescribeShaderAttribType(glType, name);
+                result.Add(name, new ShaderAttribInfo((uint)location, components, type));
+            }
+            return result;
+        }
+
+        private static (VertexAttribType Type, int Components) DescribeShaderAttribType(
+            AttributeType glType, string name)
+        {
+            return glType switch
+            {
+                AttributeType.Float     => (VertexAttribType.Float, 1),
+                AttributeType.FloatVec2 => (VertexAttribType.Float, 2),
+                AttributeType.FloatVec3 => (VertexAttribType.Float, 3),
+                AttributeType.FloatVec4 => (VertexAttribType.Float, 4),
+                _ => throw new NotSupportedException(
+                    $"Shader attribute '{name}' has GLSL type {glType}, which is not " +
+                    $"yet supported by CreateVertexArray. Extend DescribeShaderAttribType.")
+            };
+        }
+
+        private static List<AttributeBinding> BindMeshToShader(
+            Mesh mesh,
+            Dictionary<string, ShaderAttribInfo> shaderAttribs)
+        {
+            var bindings = new List<AttributeBinding>(shaderAttribs.Count);
+            var consumed = new HashSet<string>();
+
+            foreach ((string name, ShaderAttribInfo info) in shaderAttribs)
+            {
+                if (mesh.Attributes.Contains(name))
+                {
+                    VertexAttribute meshAttr = mesh.Attributes[name];
+                    ValidateComponentMatch(name, meshAttr, info);
+                    bindings.Add(new AttributeBinding(
+                        info.Location, info.Components, info.Type,
+                        NormalizedForType(meshAttr.DataType),
+                        meshAttr, DoubleSplit.None, 0));
+                    consumed.Add(name);
+                    continue;
+                }
+
+                // EmulatedDoubleVector3: "<base>High" / "<base>Low" pair.
+                string? baseName = TryStripSuffix(name, out DoubleSplit split);
+                if (baseName != null
+                    && mesh.Attributes.Contains(baseName)
+                    && mesh.Attributes[baseName].DataType == VertexAttributeType.EmulatedDoubleVector3)
+                {
+                    bindings.Add(new AttributeBinding(
+                        info.Location, info.Components, info.Type, false,
+                        mesh.Attributes[baseName], split, 0));
+                    continue;
+                }
+
+                throw new InvalidOperationException(
+                    $"Shader declares attribute '{name}' but the mesh has no matching " +
+                    $"attribute (and no '{baseName}' emulated-double source).");
+            }
+
+            // Validate that every half of a double split is present in the shader.
+            foreach (VertexAttribute a in mesh.Attributes.All)
+            {
+                if (a.DataType != VertexAttributeType.EmulatedDoubleVector3) continue;
+                bool hasHigh = shaderAttribs.ContainsKey(a.Name + "High");
+                bool hasLow = shaderAttribs.ContainsKey(a.Name + "Low");
+                if (hasHigh ^ hasLow)
+                {
+                    throw new InvalidOperationException(
+                        $"Emulated-double mesh attribute '{a.Name}' requires both " +
+                        $"'{a.Name}High' and '{a.Name}Low' in the shader; found only one.");
+                }
+            }
+
+            return bindings;
+        }
+
+        private static string? TryStripSuffix(string name, out DoubleSplit split)
+        {
+            if (name.EndsWith("High", StringComparison.Ordinal))
+            {
+                split = DoubleSplit.High;
+                return name.Substring(0, name.Length - 4);
+            }
+            if (name.EndsWith("Low", StringComparison.Ordinal))
+            {
+                split = DoubleSplit.Low;
+                return name.Substring(0, name.Length - 3);
+            }
+            split = DoubleSplit.None;
+            return null;
+        }
+
+        private static void ValidateComponentMatch(
+            string name, VertexAttribute meshAttr, ShaderAttribInfo info)
+        {
+            int meshComponents = meshAttr.DataType switch
+            {
+                VertexAttributeType.UnsignedByte => 1,
+                VertexAttributeType.HalfFloat or VertexAttributeType.Float => 1,
+                VertexAttributeType.HalfFloatVector2 or VertexAttributeType.FloatVector2 => 2,
+                VertexAttributeType.HalfFloatVector3 or VertexAttributeType.FloatVector3 => 3,
+                VertexAttributeType.HalfFloatVector4 or VertexAttributeType.FloatVector4 => 4,
+                VertexAttributeType.EmulatedDoubleVector3 => 3,
+                _ => throw new NotSupportedException(
+                    $"Mesh attribute '{name}' has unsupported type {meshAttr.DataType}.")
+            };
+            if (meshComponents != info.Components)
+            {
+                throw new InvalidOperationException(
+                    $"Attribute '{name}' component mismatch: shader expects " +
+                    $"{info.Components}, mesh provides {meshComponents}.");
+            }
+        }
+
+        private static bool NormalizedForType(VertexAttributeType t)
+            => t == VertexAttributeType.UnsignedByte;
+
+        private static uint ComponentSizeBytes(VertexAttribType t) => t switch
+        {
+            VertexAttribType.UnsignedByte => 1,
+            VertexAttribType.HalfFloat => 2,
+            VertexAttribType.Float => 4,
+            _ => throw new NotSupportedException($"Component size for {t} not defined.")
+        };
+
+        private static int GetVertexCount(Mesh mesh)
+        {
+            int count = -1;
+            foreach (VertexAttribute a in mesh.Attributes.All)
+            {
+                if (count < 0) count = a.Count;
+                else if (a.Count != count)
+                    throw new InvalidOperationException(
+                        $"Mesh attributes disagree on vertex count: '{a.Name}' has " +
+                        $"{a.Count}, expected {count}.");
+            }
+            if (count < 0)
+                throw new InvalidOperationException("Mesh has no attributes.");
+            return count;
+        }
+
+        private IndexBuffer? CreateElementBuffer(Mesh mesh, BufferHint hint)
+        {
+            switch (mesh.Indices)
+            {
+                case null:
+                    return null;
+                case IndicesUnsignedInt u:
+                    {
+                        uint[] arr = new uint[u.Values.Count];
+                        u.Values.CopyTo(arr, 0);
+                        var buf = new IndexBuffer(_gl, hint, arr.Length * sizeof(uint),
+                            IndexBufferDatatype.UnsignedInt);
+                        buf.CopyFromSystemMemory(arr);
+                        return buf;
+                    }
+                case IndicesUnsignedShort s:
+                    {
+                        ushort[] arr = new ushort[s.Values.Count];
+                        s.Values.CopyTo(arr, 0);
+                        var buf = new IndexBuffer(_gl, hint, arr.Length * sizeof(ushort),
+                            IndexBufferDatatype.UnsignedShort);
+                        buf.CopyFromSystemMemory(arr);
+                        return buf;
+                    }
+                default:
+                    throw new NotSupportedException(
+                        $"Index buffer type {mesh.Indices.GetType().Name} is not supported.");
+            }
+        }
+
+        private static void WriteVertexAttribute(
+            Span<byte> dest, VertexAttribute src, int vertex, DoubleSplit split)
+        {
+            switch (src)
+            {
+                case VertexAttributeUnsignedByte a:
+                    dest[0] = a.Values[vertex];
+                    return;
+
+                case VertexAttributeFloat a:
+                    BitConverter.TryWriteBytes(dest, a.Values[vertex]);
+                    return;
+
+                case VertexAttributeFloatVector2 a:
+                    {
+                        Vector2 v = a.Values[vertex];
+                        MemoryMarshal.Write(dest, in v);
+                        return;
+                    }
+
+                case VertexAttributeFloatVector3 a:
+                    {
+                        Vector3 v = a.Values[vertex];
+                        MemoryMarshal.Write(dest, in v);
+                        return;
+                    }
+
+                case VertexAttributeFloatVector4 a:
+                    {
+                        Vector4 v = a.Values[vertex];
+                        MemoryMarshal.Write(dest, in v);
+                        return;
+                    }
+
+                case VertexAttributeHalfFloat a:
+                    BitConverter.TryWriteBytes(dest, a.Values[vertex]);
+                    return;
+
+                case VertexAttributeHalfFloatVector2 a:
+                    {
+                        (Half x, Half y) = a.Values[vertex];
+                        BitConverter.TryWriteBytes(dest, x);
+                        BitConverter.TryWriteBytes(dest.Slice(2), y);
+                        return;
+                    }
+
+                case VertexAttributeHalfFloatVector3 a:
+                    {
+                        (Half x, Half y, Half z) = a.Values[vertex];
+                        BitConverter.TryWriteBytes(dest, x);
+                        BitConverter.TryWriteBytes(dest.Slice(2), y);
+                        BitConverter.TryWriteBytes(dest.Slice(4), z);
+                        return;
+                    }
+
+                case VertexAttributeHalfFloatVector4 a:
+                    {
+                        (Half x, Half y, Half z, Half w) = a.Values[vertex];
+                        BitConverter.TryWriteBytes(dest, x);
+                        BitConverter.TryWriteBytes(dest.Slice(2), y);
+                        BitConverter.TryWriteBytes(dest.Slice(4), z);
+                        BitConverter.TryWriteBytes(dest.Slice(6), w);
+                        return;
+                    }
+
+                case VertexAttributeDoubleVector3 a:
+                    {
+                        // DSFP/RTE split: high = (float)d; low = (float)(d - high).
+                        // Both halves together reconstruct the double to 2^-24 + 2^-53 error.
+                        Vector3D d = a.Values[vertex];
+                        float hx = (float)d.X, hy = (float)d.Y, hz = (float)d.Z;
+                        Vector3 w = split == DoubleSplit.High
+                            ? new Vector3(hx, hy, hz)
+                            : new Vector3((float)(d.X - hx), (float)(d.Y - hy), (float)(d.Z - hz));
+                        MemoryMarshal.Write(dest, in w);
+                        return;
+                    }
+
+                default:
+                    throw new NotSupportedException(
+                        $"Vertex attribute type {src.DataType} is not supported by CreateVertexArray.");
+            }
+        }
+
+        #endregion
 
         #region Render State Application (with shadowing)
 
@@ -426,19 +805,35 @@ namespace Geode.Rendering
             _ => FrontFaceDirection.Ccw
         };
 
-        private static Silk.NET.OpenGL.BlendingFactor ToGlBlendFactor(Rendering.BlendingFactor f) => f switch
+        private static Silk.NET.OpenGL.BlendingFactor ToGlBlendFactor(State.BlendingFactor f) => f switch
         {
-            Rendering.BlendingFactor.Zero => Silk.NET.OpenGL.BlendingFactor.Zero,
-            Rendering.BlendingFactor.One => Silk.NET.OpenGL.BlendingFactor.One,
-            Rendering.BlendingFactor.SourceColor => Silk.NET.OpenGL.BlendingFactor.SrcColor,
-            Rendering.BlendingFactor.OneMinusSourceColor => Silk.NET.OpenGL.BlendingFactor.OneMinusSrcColor,
-            Rendering.BlendingFactor.DestinationColor => Silk.NET.OpenGL.BlendingFactor.DstColor,
-            Rendering.BlendingFactor.OneMinusDestinationColor => Silk.NET.OpenGL.BlendingFactor.OneMinusDstColor,
-            Rendering.BlendingFactor.SourceAlpha => Silk.NET.OpenGL.BlendingFactor.SrcAlpha,
-            Rendering.BlendingFactor.OneMinusSourceAlpha => Silk.NET.OpenGL.BlendingFactor.OneMinusSrcAlpha,
-            Rendering.BlendingFactor.DestinationAlpha => Silk.NET.OpenGL.BlendingFactor.DstAlpha,
-            Rendering.BlendingFactor.OneMinusDestinationAlpha => Silk.NET.OpenGL.BlendingFactor.OneMinusDstAlpha,
+            State.BlendingFactor.Zero => Silk.NET.OpenGL.BlendingFactor.Zero,
+            State.BlendingFactor.One => Silk.NET.OpenGL.BlendingFactor.One,
+            State.BlendingFactor.SourceColor => Silk.NET.OpenGL.BlendingFactor.SrcColor,
+            State.BlendingFactor.OneMinusSourceColor => Silk.NET.OpenGL.BlendingFactor.OneMinusSrcColor,
+            State.BlendingFactor.DestinationColor => Silk.NET.OpenGL.BlendingFactor.DstColor,
+            State.BlendingFactor.OneMinusDestinationColor => Silk.NET.OpenGL.BlendingFactor.OneMinusDstColor,
+            State.BlendingFactor.SourceAlpha => Silk.NET.OpenGL.BlendingFactor.SrcAlpha,
+            State.BlendingFactor.OneMinusSourceAlpha => Silk.NET.OpenGL.BlendingFactor.OneMinusSrcAlpha,
+            State.BlendingFactor.DestinationAlpha => Silk.NET.OpenGL.BlendingFactor.DstAlpha,
+            State.BlendingFactor.OneMinusDestinationAlpha => Silk.NET.OpenGL.BlendingFactor.OneMinusDstAlpha,
             _ => Silk.NET.OpenGL.BlendingFactor.One
+        };
+
+        private static GlPrimitiveType ToGlPrimitiveType(PrimitiveType p) => p switch
+        {
+            PrimitiveType.Points => GlPrimitiveType.Points,
+            PrimitiveType.Lines => GlPrimitiveType.Lines,
+            PrimitiveType.LineLoop => GlPrimitiveType.LineLoop,
+            PrimitiveType.LineStrip => GlPrimitiveType.LineStrip,
+            PrimitiveType.Triangles => GlPrimitiveType.Triangles,
+            PrimitiveType.TriangleStrip => GlPrimitiveType.TriangleStrip,
+            PrimitiveType.TriangleFan => GlPrimitiveType.TriangleFan,
+            PrimitiveType.LinesAdjacency => GlPrimitiveType.LinesAdjacency,
+            PrimitiveType.LineStripAdjacency => GlPrimitiveType.LineStripAdjacency,
+            PrimitiveType.TrianglesAdjacency => GlPrimitiveType.TrianglesAdjacency,
+            PrimitiveType.TriangleStripAdjacency => GlPrimitiveType.TriangleStripAdjacency,
+            _ => GlPrimitiveType.Triangles
         };
 
         private static PolygonMode ToGlPolygonMode(RasterizationMode rasterizationMode) => rasterizationMode switch
