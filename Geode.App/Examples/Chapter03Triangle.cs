@@ -1,15 +1,3 @@
-// Book §3.8, "Putting It All Together: Rendering a Triangle" -- plus the
-// §3.8 "Try This" exercise: apply a texture using the Mesh -> VAO bridge,
-// Device.CreateTexture2DFromFile, a TextureSampler, and TextureUnits.
-//
-// Flow per frame: two lines -- context.Clear + context.Draw.
-// All texture binding is declarative via context.TextureUnits[0].
-//
-// On first run this writes data/textures/geode-test.tga (a 64x64 magenta/
-// white checkerboard) into the current working directory if the file does
-// not exist. stb_image reads TGAs, so CreateTexture2DFromFile handles it
-// the same as a PNG.
-
 using Geode.Core.Geometry;
 using Geode.Rendering;
 using Geode.Rendering.Buffers;
