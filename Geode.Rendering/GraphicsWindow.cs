@@ -76,7 +76,10 @@ namespace Geode.Rendering
         {
             _gl = GL.GetApi(_window);
             _device = new Device(_gl);
-            _context = new RenderContext(_gl);
+            // Wire the shader cache's creation path through Device so every
+            // ShaderProgram in the system -- cached or one-off -- flows
+            // through a single factory.
+            _context = new RenderContext(_gl, _device.CreateShaderProgram);
         }
 
         /// <summary>Run the window's event loop until it closes.</summary>

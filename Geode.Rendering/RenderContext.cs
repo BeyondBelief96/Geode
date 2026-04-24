@@ -1,6 +1,7 @@
 ﻿using Geode.Core;
 using Geode.Core.Geometry;
 using Geode.Rendering.Buffers;
+using Geode.Rendering.Framebuffers;
 using Geode.Rendering.Shaders;
 using Geode.Rendering.State;
 using Geode.Rendering.Textures;
@@ -9,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using Framebuffer = Geode.Rendering.Framebuffers.Framebuffer;
 using GlPrimitiveType = Silk.NET.OpenGL.PrimitiveType;
 using PrimitiveType = Geode.Core.Geometry.PrimitiveType;
 
@@ -18,6 +20,8 @@ namespace Geode.Rendering
     {
         private readonly GL _gl;
         private RenderState _shadowState;
+        private readonly int _maximumColorAttachments;
+        private uint _shadowFramebuffer;
 
         /// <summary>
         /// Process-wide cache of compiled shader programs keyed by application-chosen
@@ -34,7 +38,25 @@ namespace Geode.Rendering
         /// </summary>
         public TextureUnits TextureUnits { get; }
 
-        public RenderContext(GL gl)
+        /// <summary>
+        /// The framebuffer draw targets write into. <c>null</c> means the
+        /// window's default framebuffer. Changes take effect on the next
+        /// <see cref="Draw"/>, <see cref="DrawArrays"/>, or <see cref="Clear"/>
+        /// call. See <see cref="Framebuffers.Framebuffer"/> and Book §3.7.
+        /// </summary>
+        public Framebuffer? Framebuffer { get; set; }
+
+        /// <summary>
+        /// Construct a render context bound to <paramref name="gl"/>.
+        /// <paramref name="shaderFactory"/> is the function the internal
+        /// <see cref="ShaderCache"/> uses to build programs on cache miss --
+        /// typically <c>device.CreateShaderProgram</c>. Passing it in (rather
+        /// than letting the cache call <c>new ShaderProgram(...)</c> directly)
+        /// keeps <see cref="Device"/> as the single creation path for shader
+        /// programs without introducing a structural <c>Context -&gt; Device</c>
+        /// dependency.
+        /// </summary>
+        public RenderContext(GL gl, Func<string, string, ShaderProgram> shaderFactory)
         {
             _gl = gl;
 
@@ -59,11 +81,41 @@ namespace Geode.Rendering
 
             // ShaderCache is a context-owned resource: it holds GL program handles,
             // which are only valid for this context's lifetime. Dispose(this) tears it down.
-            Shaders = new ShaderCache(_gl);
+            // The cache itself does not touch GL -- it delegates creation to the factory.
+            Shaders = new ShaderCache(shaderFactory);
 
             // TextureUnits queries GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS now, so
             // construct it after the GL context is fully set up.
             TextureUnits = new TextureUnits(_gl);
+
+            // Cache the attachment limit so CreateFramebuffer doesn't re-query
+            // GL every call.
+            _gl.GetInteger(GetPName.MaxColorAttachments, out _maximumColorAttachments);
+        }
+
+        /// <summary>
+        /// Create a new empty <see cref="Framebuffers.Framebuffer"/>. Assign
+        /// textures to its <see cref="ColorAttachments"/> /
+        /// <see cref="Framebuffers.Framebuffer.DepthAttachment"/> properties,
+        /// then set <see cref="Framebuffer"/> on this context to redirect
+        /// draws into it. Book §3.7.
+        /// </summary>
+        public Framebuffer CreateFramebuffer()
+            => new Framebuffer(_gl, _maximumColorAttachments);
+
+        private void ApplyFramebuffer()
+        {
+            // Flush any pending attachment changes BEFORE rebinding, so the
+            // draw sees the intended attachments. DSA means this does not
+            // require the FBO to be bound.
+            Framebuffer?.Clean();
+
+            uint desired = Framebuffer?.Handle ?? 0;
+            if (desired != _shadowFramebuffer)
+            {
+                _gl.BindFramebuffer(FramebufferTarget.Framebuffer, desired);
+                _shadowFramebuffer = desired;
+            }
         }
 
         /// <summary>
@@ -99,6 +151,8 @@ namespace Geode.Rendering
         /// <param name="clearState">What to clear and to what values.</param>
         public void Clear(ClearState clearState)
         {
+            ApplyFramebuffer();
+
             // Set clear values
             _gl.ClearColor(clearState.Color.X, clearState.Color.Y,
                 clearState.Color.Z, clearState.Color.W);
@@ -160,6 +214,7 @@ namespace Geode.Rendering
         /// </remarks>
         public unsafe void Draw(PrimitiveType primitiveType, DrawState drawState, SceneState sceneState)
         {
+            ApplyFramebuffer();
             ApplyRenderState(drawState.RenderState);
             TextureUnits.Clean();
             drawState.ShaderProgram.Bind(this, drawState, sceneState);
@@ -185,6 +240,7 @@ namespace Geode.Rendering
         public void DrawArrays(PrimitiveType primitiveType, int first, uint count,
             DrawState drawState, SceneState sceneState)
         {
+            ApplyFramebuffer();
             ApplyRenderState(drawState.RenderState);
             TextureUnits.Clean();
             drawState.ShaderProgram.Bind(this, drawState, sceneState);
@@ -511,20 +567,18 @@ namespace Geode.Rendering
 
                 case VertexAttributeHalfFloatVector3 a:
                     {
-                        (Half x, Half y, Half z) = a.Values[vertex];
-                        BitConverter.TryWriteBytes(dest, x);
-                        BitConverter.TryWriteBytes(dest.Slice(2), y);
-                        BitConverter.TryWriteBytes(dest.Slice(4), z);
+                        BitConverter.TryWriteBytes(dest, a.Values[vertex].X);
+                        BitConverter.TryWriteBytes(dest.Slice(2), a.Values[vertex].Y);
+                        BitConverter.TryWriteBytes(dest.Slice(4), a.Values[vertex].Z);
                         return;
                     }
 
                 case VertexAttributeHalfFloatVector4 a:
                     {
-                        (Half x, Half y, Half z, Half w) = a.Values[vertex];
-                        BitConverter.TryWriteBytes(dest, x);
-                        BitConverter.TryWriteBytes(dest.Slice(2), y);
-                        BitConverter.TryWriteBytes(dest.Slice(4), z);
-                        BitConverter.TryWriteBytes(dest.Slice(6), w);
+                        BitConverter.TryWriteBytes(dest, a.Values[vertex].X);
+                        BitConverter.TryWriteBytes(dest.Slice(2), a.Values[vertex].Y);
+                        BitConverter.TryWriteBytes(dest.Slice(4), a.Values[vertex].Z);
+                        BitConverter.TryWriteBytes(dest.Slice(6), a.Values[vertex].W);
                         return;
                     }
 

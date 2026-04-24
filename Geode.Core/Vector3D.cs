@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 namespace Geode.Core
 {
@@ -9,6 +10,8 @@ namespace Geode.Core
     /// These are generally used for cartesian coordinates (ECEF/WGS84), 
     /// while Geodetic2D and Geodetic3D are used for geodetic coordinates (latitude, longitude, altitude).
     /// </summary>
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
     public readonly struct Vector3D
     {
         public readonly double X;

@@ -6457,453 +6457,512 @@ Each step adds one or two source files and one or more shaders. Every step compi
 
 *Corresponds to Book Chapter 4, Section 4.1, Listings 4.1-4.5*
 
-*OpenGlobe sources: `SubdivisionSphereTessellator.cs`, `GeographicGridEllipsoidTessellator.cs`*
+*OpenGlobe sources: `Source/Core/Tessellation/SubdivisionSphereTessellatorSimple.cs`, `SubdivisionSphereTessellator.cs`, `GeographicGridEllipsoidTessellator.cs`, `SubdivisionUtility.cs`, `TriangleIndicesUnsignedInt.cs`*
 
-### Why Tessellation Matters
+*Geode sources: `Geode.Core/Tessellation/SubdivisionSphereTessellatorSimple.cs`, `SubdivisionUtility.cs`, `TriangleIndicesUnsignedInt.cs`*
 
-The GPU draws triangles. An ellipsoid is a smooth surface with infinite curvature -- it contains no flat faces. To render it, we must approximate it with a mesh of flat triangles. The quality of this approximation determines how smooth the globe looks at any given zoom level.
+### 21.1 Why Tessellation Matters
 
-Two competing concerns drive the design:
+The GPU draws triangles. An ellipsoid is a smooth surface with infinite curvature -- it contains no flat faces. To render it we approximate it with a mesh of flat triangles whose count determines how smooth the silhouette looks.
 
-1. **Visual quality.** More triangles produce a smoother silhouette. At a coarse resolution, the globe looks like a faceted gem. At a fine resolution, individual triangles are smaller than pixels and the silhouette is indistinguishable from a true ellipsoid.
+Two concerns pull in opposite directions:
 
-2. **Performance.** Every triangle costs vertex processing, rasterization, and fragment shading. A globe with 10 million triangles is wasteful when the viewport is 1920x1080 (about 2 million pixels). There is a sweet spot where adding more triangles produces no visible improvement.
+1. **Visual quality.** More triangles produce a smoother silhouette. Too few and the globe looks faceted; enough that individual triangles fall below one pixel and the silhouette is indistinguishable from a true ellipsoid.
+2. **Performance.** Every triangle costs vertex processing, rasterization, and (for back-faces that weren't culled early) partial fragment cost. Ten million triangles for a 1920x1080 viewport (~two million pixels) is waste. There is a sweet spot where extra triangles produce no further visible improvement.
 
-The tessellator's job is to produce two arrays:
-- `float[] positions` -- interleaved vertex data (position XYZ + normal XYZ + texture coordinate UV), 8 floats per vertex
-- `uint[] indices` -- triangle indices into the vertex array, 3 per triangle
+Chapter 4 of the book presents three common approaches -- **subdivision surfaces**, a **geographic grid (lat/lon)**, and a **cube-map grid**. Geode ports the first two, matching the OpenGlobe reference.
 
-We implement two tessellation algorithms. Each has different trade-offs.
+### 21.2 Architectural Choices
 
-### Algorithm 1: Subdivision Surfaces
+Before we look at algorithms, it helps to nail down the contract that every tessellator in Geode obeys, because it differs from the casual "return a flat float[]" pattern you see in small examples.
 
-The subdivision approach starts with a simple polyhedron (a tetrahedron -- 4 vertices, 4 triangles) inscribed in the unit sphere. Each subdivision pass splits every triangle into four smaller triangles by computing edge midpoints, then projects those midpoints onto the ellipsoid surface. After `n` subdivisions, the mesh has `4 * 4^n` triangles.
+- **Output is a `Mesh`, not a flat vertex array.** Every tessellator returns the `Mesh` type from `Geode.Core.Geometry` (see §14.5). `Mesh` holds:
+  - `VertexAttributeCollection Attributes` -- one `VertexAttribute` per named stream (`"position"`, optionally `"normal"`, `"textureCoordinate"`). Each stream is its own typed list.
+  - `IndicesBase Indices` -- strongly typed index buffer (`IndicesUnsignedInt` here).
+  - `PrimitiveType` -- set to `Triangles`.
+  - `WindingOrder FrontFaceWindingOrder` -- set to `CounterClockwise`, matching OpenGL's default and the order we emit vertices in.
 
-| Subdivisions | Triangles | Vertices (approx) |
+  The Rendering layer later converts this `Mesh` into a `VertexArray` (VAO) by walking the attribute collection, creating one `VertexBuffer` per attribute, and matching names to shader `in` variables. The tessellator never touches OpenGL.
+
+- **Positions live in double precision.** The `"position"` attribute is a `VertexAttributeDoubleVector3`, storing `Vector3D` (64-bit per component) on the CPU. This is not wasted memory: when the Rendering layer uploads the mesh it splits each `Vector3D` into two `float` vectors (`positionHigh`, `positionLow`) so the vertex shader can apply the RTE / DSFP precision trick from Book Chapter 5 (see §27). If we stored positions as `float` now, we would lose the extra bits before we ever got a chance to use them.
+
+- **Tessellators emit points on the *unit sphere*, not on the ellipsoid.** This is the single most important architectural point in the subdivision tessellators, and it is easy to miss. Every midpoint is `.Normalize()`'d. Applying the ellipsoid radii is pushed *downstream* -- the book does it in the vertex shader via a `u_globeOneOverRadiiSquared` uniform (Section 4.2), or in a later CPU step that multiplies by `ellipsoid.Radii`. The payoff: one tessellated sphere mesh can be rendered against WGS-84, Mars, or a unit sphere just by changing a uniform. The `GeographicGridEllipsoidTessellator` does take an `Ellipsoid` and bake radii in at build time, because its parametric formulation needs them to place stack/slice points -- that difference is covered in §21.6.
+
+- **Attributes are selectable via a `[Flags]` enum.** The full subdivision tessellator exposes a `SubdivisionSphereVertexAttributes` flag set (`Position | Normal | TextureCoordinate | All`). Early steps in Part IV only want positions (e.g., the wireframe globe); the Phong step in §23 requests `All`. This is cheaper than unconditionally writing every attribute: at 6-7 subdivisions the tessellator produces tens of thousands of vertices, and tex-coord computation involves `atan2` + `asin` per vertex.
+
+- **Normals and texture coordinates are half-precision.** Normals are `VertexAttributeHalfFloatVector3`, tex coords are `VertexAttributeHalfFloatVector2`. A half is enough precision for unit-length normals and [0, 1] UVs, and halves the vertex bandwidth on those streams. Positions stay double because the globe is 6.4 million meters across.
+
+- **Index type is `IndicesUnsignedInt`.** Subdivision past ~7 levels produces more than `ushort.MaxValue` vertices, so the `unsigned short` variant is not safe. OpenGlobe always uses `uint` indices for globe tessellators; Geode follows.
+
+**Forward-referenced types you'll need.** Most are already in the repo; one helper method is not:
+
+- `Mesh`, `VertexAttributeDoubleVector3`, `VertexAttributeHalfFloatVector3`, `VertexAttributeHalfFloatVector2`, `VertexAttributeCollection`, `IndicesBase`, `IndicesUnsignedInt`, `PrimitiveType`, `WindingOrder` -- all present in `Geode.Core/Geometry/` (§14.5).
+- `TriangleIndicesUnsignedInt` -- present in `Geode.Core/Tessellation/`.
+- `SubdivisionUtility` -- present; provides vertex/triangle counts and the equirectangular tex-coord helper.
+- `IndicesUnsignedInt.AddTriangle(TriangleIndicesUnsignedInt)` -- **not yet added**. Every tessellator below calls it. Add the following to `Geode.Core/Geometry/Indices.cs` before wiring up the tessellators:
+
+  ```csharp
+  // Inside IndicesUnsignedInt
+  public void AddTriangle(Tessellation.TriangleIndicesUnsignedInt triangle)
+  {
+      Values.Add(triangle.UI0);
+      Values.Add(triangle.UI1);
+      Values.Add(triangle.UI2);
+  }
+  ```
+
+  (Keep the `Values` list public too; callers that need per-index control still use it.)
+
+### 21.3 Shared Helpers
+
+Two tiny types carry the shared state between the tessellators.
+
+**`TriangleIndicesUnsignedInt`** is a read-only value type holding three `uint` vertex indices (`UI0`, `UI1`, `UI2`), with `int` accessors (`I0`, `I1`, `I2`) for convenience. It is the unit of work passed through the subdivide recursion and written out with `indices.AddTriangle(...)`. OpenGlobe uses the same struct verbatim; Geode's copy in `Geode.Core/Tessellation/TriangleIndicesUnsignedInt.cs` is a direct port.
+
+**`SubdivisionUtility`** is `internal static` and contains three helpers:
+
+- `NumberOfTriangles(n)` -- total triangles produced by the `Simple` tessellator *including every intermediate level*, because the Simple variant writes triangles at every recursion leaf on a budget that prices out the recursion tree's leaf count. Closed form: `4 * sum_{i=0..n} 4^i` = `(4^(n+2) - 4) / 3`.
+
+  Actually re-read that -- only the leaves are written to the index buffer (`level == 0` in `Subdivide`). The loop in `NumberOfTriangles` sums `4^i` from `i = 0..n` and multiplies by 4, but because only leaves write indices, what the book really cares about is the leaf count `4 * 4^n`. The summed form is used as a safe upper bound for preallocation so the `IndicesUnsignedInt`'s backing list never has to grow. This is a deliberate overestimate in the OpenGlobe reference; preserve it as-is.
+
+- `NumberOfVertices(n)` -- upper bound used to preallocate the position list. The Simple tessellator does *not* dedupe edge midpoints, so every triangle at every level past 0 adds three new vertices. Closed form: `4 + 12 * sum_{i=0..n-1} 4^i`.
+
+- `ComputeTextureCoordinate(position)` -- maps a unit-sphere point to a 2D `(u, v)` coordinate using an equirectangular (longitude/latitude) projection:
+
+  ```
+  u = atan2(y, x) / (2*pi) + 0.5     // longitude -> [0, 1]
+  v = asin(z) / pi + 0.5             // latitude  -> [0, 1]
+  ```
+
+  This corresponds to Book Equation 4.5. The caller is responsible for normalizing inputs. OpenGlobe returns a `Vector2H` (half-vector); Geode returns `Vector2D` today (see `SubdivisionUtility.cs`) which the caller can convert to halves when writing the attribute. If you choose to introduce a `Vector2H` wrapper later, change this return type to match OpenGlobe exactly -- but it is not required.
+
+### 21.4 Algorithm 1a: Subdivision Surfaces -- the "Simple" Variant
+
+This is the tessellator you are porting right now (`Geode.Core/Tessellation/SubdivisionSphereTessellatorSimple.cs`). It is the book's first tessellator because it is the shortest end-to-end demonstration of the idea, even though it produces a mesh with many duplicate vertices on shared edges.
+
+**Core idea.**
+
+1. Start with a **regular tetrahedron** inscribed in the unit sphere -- four vertices, four triangles. This is the coarsest closed triangular mesh that wraps the sphere.
+2. For each of the four triangles, recursively subdivide: compute three edge midpoints, normalize each onto the unit sphere, emit four smaller triangles, recurse. Stop at `level == 0` and append the final (leaf) triangle to the index buffer.
+3. Because the recursion appends midpoints at every level but only emits triangles at the leaves, the position buffer grows linearly with total recursion cost while the index buffer grows only with leaves.
+
+**Why "Simple".** The Simple variant does not dedupe edge midpoints. Two adjacent triangles sharing an edge each compute that edge's midpoint independently and append both copies to `positions`. This is wasteful: roughly half the vertices at deep subdivision are duplicates. The production variant in §21.5 keeps a dictionary from `(minIndex, maxIndex) -> newIndex` to dedupe. The Simple version exists to show the algorithm clearly and to confirm triangle/vertex-count arithmetic in isolation; it is also what many tutorials use.
+
+**Triangle counts at common subdivision levels** (leaf triangles = `4 * 4^n`):
+
+| Subdivisions (n) | Leaf triangles | Simple-variant vertices |
 |---|---|---|
 | 0 | 4 | 4 |
-| 1 | 16 | 10 |
-| 2 | 64 | 34 |
-| 3 | 256 | 130 |
-| 4 | 1,024 | 514 |
-| 5 | 4,096 | 2,050 |
-| 6 | 16,384 | 8,194 |
-| 7 | 65,536 | 32,770 |
+| 1 | 16 | 16 |
+| 2 | 64 | 52 |
+| 3 | 256 | 196 |
+| 4 | 1,024 | 772 |
+| 5 | 4,096 | 3,076 |
+| 6 | 16,384 | 12,292 |
+| 7 | 65,536 | 49,156 |
 
-The key advantage of subdivision is **uniform triangle size** -- every triangle on the sphere covers approximately the same solid angle. There are no degenerate slivers near the poles, unlike the geographic grid approach.
+(Compare the full dedup variant: ~half as many unique vertices at `n >= 3`.)
+
+**The tetrahedron (Book Equation 4.1).** The four unit-sphere points OpenGlobe uses are:
+
+- `p0 = (0, 0, 1)` -- north pole
+- `p1 = (0, 2sqrt(2)/3, -1/3)`
+- `p2 = (-sqrt(6)/3, -sqrt(2)/3, -1/3)`
+- `p3 = ( sqrt(6)/3, -sqrt(2)/3, -1/3)`
+
+These are oriented so `p0` sits at the top and the base triangle `(p1, p2, p3)` is horizontal at `z = -1/3`. The four seed triangles are wound counter-clockwise as seen from outside the sphere, so `WindingOrder.CounterClockwise` matches and back-face culling will later cull interior faces correctly:
+
+- `(p0, p1, p2)` -- upper-left face
+- `(p0, p2, p3)` -- front face
+- `(p0, p3, p1)` -- upper-right face
+- `(p1, p3, p2)` -- base
+
+Your current `SubdivisionSphereTessellatorSimple.cs` already sets up this tetrahedron verbatim. To finish the port, invoke `Subdivide` on each seed triangle and return the mesh. The completed file looks like this:
 
 ```csharp
-// Geode.Core/SubdivisionSphereTessellator.cs
+// Geode.Core/Tessellation/SubdivisionSphereTessellatorSimple.cs
 //
-// Book Section 4.1, Listings 4.1-4.3
-// OpenGlobe: Source/Core/Tessellation/SubdivisionSphereTessellator.cs
+// Book Section 4.1, Listings 4.1-4.2 (the "no dedup" variant)
+// OpenGlobe: Source/Core/Tessellation/SubdivisionSphereTessellatorSimple.cs
 //
-// Generates an ellipsoid mesh by recursive subdivision of a tetrahedron.
-// Each subdivision splits every triangle into 4 by computing edge midpoints
-// and projecting them onto the ellipsoid surface.
+// Recursively subdivides a regular tetrahedron into a sphere approximation.
+// Produces positions on the unit sphere only -- ellipsoid radii are applied
+// downstream (typically in the vertex shader via a uniform, see Section 23).
+// Does NOT dedupe shared edge midpoints; see SubdivisionSphereTessellator
+// (Section 21.5) for the dedup'd variant used in production.
 
+using Geode.Core.Geometry;
 using System;
 using System.Collections.Generic;
 
-namespace Geode.Core
+namespace Geode.Core.Tessellation
 {
-    /// <summary>
-    /// Output of a tessellation: interleaved vertex data and triangle indices.
-    /// Vertex layout: [px, py, pz, nx, ny, nz, s, t] -- 8 floats per vertex.
-    /// </summary>
-    public sealed class MeshData
+    public static class SubdivisionSphereTessellatorSimple
     {
-        /// <summary>
-        /// Interleaved vertex data: position (3), normal (3), texcoord (2) per vertex.
-        /// Stride = 8 floats.
-        /// </summary>
-        public float[] Vertices { get; }
-
-        /// <summary>
-        /// Triangle indices, 3 per triangle. Counter-clockwise winding (front-facing).
-        /// </summary>
-        public uint[] Indices { get; }
-
-        /// <summary>Number of vertices (Vertices.Length / 8).</summary>
-        public int VertexCount { get; }
-
-        /// <summary>Number of triangles (Indices.Length / 3).</summary>
-        public int TriangleCount { get; }
-
-        public MeshData(float[] vertices, uint[] indices)
-        {
-            Vertices = vertices;
-            Indices = indices;
-            VertexCount = vertices.Length / 8;
-            TriangleCount = indices.Length / 3;
-        }
-    }
-
-    /// <summary>
-    /// Generates an ellipsoid mesh by recursive subdivision of a regular tetrahedron.
-    /// </summary>
-    public static class SubdivisionSphereTessellator
-    {
-        /// <summary>
-        /// Computes a tessellated ellipsoid mesh.
-        /// </summary>
-        /// <param name="numberOfSubdivisions">
-        /// Number of recursive subdivision passes. 0 = tetrahedron (4 triangles).
-        /// Each pass quadruples the triangle count. Values above 8 are not recommended
-        /// (4^8 = 65536 triangles, 4^9 = 262144 -- diminishing returns).
-        /// </param>
-        /// <param name="ellipsoid">
-        /// The ellipsoid to tessellate. Vertices are projected onto this surface.
-        /// </param>
-        /// <returns>A MeshData containing interleaved vertices and triangle indices.</returns>
-        public static MeshData Compute(int numberOfSubdivisions, Ellipsoid ellipsoid)
+        public static Mesh Compute(int numberOfSubdivisions)
         {
             if (numberOfSubdivisions < 0)
-                throw new ArgumentOutOfRangeException(nameof(numberOfSubdivisions),
-                    "Number of subdivisions must be non-negative.");
-
-            // ----------------------------------------------------------
-            // Step 1: Create the initial tetrahedron (Equation 4.1)
-            // ----------------------------------------------------------
-            // Four vertices of a regular tetrahedron inscribed in the unit sphere.
-            // These coordinates come from embedding the tetrahedron so that one
-            // vertex is at (0, 0, 1) and the base is symmetric around the Z axis.
-            //
-            // v0 = (0, 0, 1)
-            // v1 = (sqrt(8/9), 0, -1/3)
-            // v2 = (-sqrt(2/9), sqrt(2/3), -1/3)
-            // v3 = (-sqrt(2/9), -sqrt(2/3), -1/3)
-
-            double oneThird = 1.0 / 3.0;
-            double sqrt8Over9 = Math.Sqrt(8.0 / 9.0);
-            double sqrt2Over9 = Math.Sqrt(2.0 / 9.0);
-            double sqrt2Over3 = Math.Sqrt(2.0 / 3.0);
-
-            Vector3D v0 = new Vector3D(0.0, 0.0, 1.0);
-            Vector3D v1 = new Vector3D(sqrt8Over9, 0.0, -oneThird);
-            Vector3D v2 = new Vector3D(-sqrt2Over9, sqrt2Over3, -oneThird);
-            Vector3D v3 = new Vector3D(-sqrt2Over9, -sqrt2Over3, -oneThird);
-
-            // The four triangles of the tetrahedron, wound counter-clockwise
-            // as seen from outside the sphere.
-            List<Vector3D> positions = new List<Vector3D> { v0, v1, v2, v3 };
-            List<TriangleIndices> triangles = new List<TriangleIndices>
             {
-                new TriangleIndices(0, 1, 2),
-                new TriangleIndices(0, 2, 3),
-                new TriangleIndices(0, 3, 1),
-                new TriangleIndices(1, 3, 2),
+                throw new ArgumentOutOfRangeException(nameof(numberOfSubdivisions),
+                    "Number of subdivisions cannot be negative.");
+            }
+
+            // ------------------------------------------------------------------
+            // Build the empty Mesh and preallocate its attribute / index lists
+            // ------------------------------------------------------------------
+            Mesh mesh = new Mesh
+            {
+                PrimitiveType = PrimitiveType.Triangles,
+                FrontFaceWindingOrder = WindingOrder.CounterClockwise
             };
 
-            // ----------------------------------------------------------
-            // Step 2: Recursive subdivision
-            // ----------------------------------------------------------
-            // For each subdivision pass, every triangle is split into 4:
-            //
-            //        v0
-            //       / \
-            //      m01--m02
-            //     / \ / \
-            //    v1--m12--v2
-            //
-            // The midpoints (m01, m02, m12) are computed, normalized to the
-            // unit sphere, and deduplicated via a dictionary keyed on the
-            // (min, max) index pair of the original edge.
+            var positionsAttribute = new VertexAttributeDoubleVector3(
+                "position",
+                SubdivisionUtility.NumberOfVertices(numberOfSubdivisions));
+            mesh.Attributes.Add(positionsAttribute);
 
-            for (int i = 0; i < numberOfSubdivisions; i++)
-            {
-                // Edge midpoint cache: maps (minIndex, maxIndex) -> new vertex index
-                Dictionary<(int, int), int> edgeMidpoints = new Dictionary<(int, int), int>();
-                List<TriangleIndices> newTriangles = new List<TriangleIndices>(triangles.Count * 4);
+            var indices = new IndicesUnsignedInt(
+                3 * SubdivisionUtility.NumberOfTriangles(numberOfSubdivisions));
+            mesh.Indices = indices;
 
-                foreach (TriangleIndices tri in triangles)
-                {
-                    int m01 = GetOrCreateMidpoint(positions, edgeMidpoints, tri.I0, tri.I1);
-                    int m12 = GetOrCreateMidpoint(positions, edgeMidpoints, tri.I1, tri.I2);
-                    int m02 = GetOrCreateMidpoint(positions, edgeMidpoints, tri.I0, tri.I2);
+            // ------------------------------------------------------------------
+            // Seed: regular tetrahedron inscribed in the unit sphere (Eq. 4.1)
+            // ------------------------------------------------------------------
+            double negativeRootTwoOverThree = -Math.Sqrt(2.0) / 3.0;
+            const double negativeOneThird = -1.0 / 3.0;
+            double rootSixOverThree = Math.Sqrt(6.0) / 3.0;
 
-                    // Four new triangles, maintaining counter-clockwise winding
-                    newTriangles.Add(new TriangleIndices(tri.I0, m01, m02));
-                    newTriangles.Add(new TriangleIndices(m01, tri.I1, m12));
-                    newTriangles.Add(new TriangleIndices(m01, m12, m02));
-                    newTriangles.Add(new TriangleIndices(m02, m12, tri.I2));
-                }
+            IList<Vector3D> positions = positionsAttribute.Values;
+            positions.Add(new Vector3D(0.0, 0.0, 1.0));                                   // p0
+            positions.Add(new Vector3D(0.0, (2.0 * Math.Sqrt(2.0)) / 3.0, negativeOneThird)); // p1
+            positions.Add(new Vector3D(-rootSixOverThree, negativeRootTwoOverThree, negativeOneThird)); // p2
+            positions.Add(new Vector3D( rootSixOverThree, negativeRootTwoOverThree, negativeOneThird)); // p3
 
-                triangles = newTriangles;
-            }
+            // Four CCW seed triangles, one per face of the tetrahedron
+            Subdivide(positions, indices, new TriangleIndicesUnsignedInt(0, 1, 2), numberOfSubdivisions);
+            Subdivide(positions, indices, new TriangleIndicesUnsignedInt(0, 2, 3), numberOfSubdivisions);
+            Subdivide(positions, indices, new TriangleIndicesUnsignedInt(0, 3, 1), numberOfSubdivisions);
+            Subdivide(positions, indices, new TriangleIndicesUnsignedInt(1, 3, 2), numberOfSubdivisions);
 
-            // ----------------------------------------------------------
-            // Step 3: Project onto ellipsoid and build output arrays
-            // ----------------------------------------------------------
-            int vertexCount = positions.Count;
-            float[] vertices = new float[vertexCount * 8];
-            uint[] indices = new uint[triangles.Count * 3];
-
-            Vector3D radii = ellipsoid.Radii;
-
-            for (int i = 0; i < vertexCount; i++)
-            {
-                // The position is on the unit sphere. Scale by ellipsoid radii.
-                Vector3D unitPos = positions[i].Normalize();
-                Vector3D worldPos = new Vector3D(
-                    unitPos.X * radii.X,
-                    unitPos.Y * radii.Y,
-                    unitPos.Z * radii.Z);
-
-                // The geodetic surface normal at this position
-                Vector3D normal = ellipsoid.GeodeticSurfaceNormal(worldPos);
-
-                // Texture coordinates from geodetic normal (Equation 4.5)
-                // s = atan2(ny, nx) / 2pi + 0.5
-                // t = asin(nz) / pi + 0.5
-                double s = Math.Atan2(normal.Y, normal.X) / Trigonometry.TwoPi + 0.5;
-                double t = Math.Asin(Math.Clamp(normal.Z, -1.0, 1.0)) / Math.PI + 0.5;
-
-                int baseIndex = i * 8;
-                vertices[baseIndex + 0] = (float)worldPos.X;
-                vertices[baseIndex + 1] = (float)worldPos.Y;
-                vertices[baseIndex + 2] = (float)worldPos.Z;
-                vertices[baseIndex + 3] = (float)normal.X;
-                vertices[baseIndex + 4] = (float)normal.Y;
-                vertices[baseIndex + 5] = (float)normal.Z;
-                vertices[baseIndex + 6] = (float)s;
-                vertices[baseIndex + 7] = (float)t;
-            }
-
-            for (int i = 0; i < triangles.Count; i++)
-            {
-                indices[i * 3 + 0] = (uint)triangles[i].I0;
-                indices[i * 3 + 1] = (uint)triangles[i].I1;
-                indices[i * 3 + 2] = (uint)triangles[i].I2;
-            }
-
-            return new MeshData(vertices, indices);
+            return mesh;
         }
 
-        /// <summary>
-        /// Finds or creates the midpoint vertex for the edge between index a and index b.
-        /// The midpoint is normalized to the unit sphere before being stored.
-        /// </summary>
-        private static int GetOrCreateMidpoint(
-            List<Vector3D> positions,
-            Dictionary<(int, int), int> cache,
-            int a, int b)
+        // level == 0: emit the triangle as-is (leaf).
+        // level  > 0: compute three edge midpoints on the unit sphere, append them
+        //             to the positions buffer, and recurse into the four children:
+        //
+        //          i0
+        //         / \
+        //       i01-i20
+        //       / \ / \
+        //      i1--i12-i2
+        //
+        // Children, in CCW order: (i0, i01, i20), (i01, i1, i12),
+        // (i01, i12, i20), (i20, i12, i2).
+        private static void Subdivide(
+            IList<Vector3D> positions,
+            IndicesUnsignedInt indices,
+            TriangleIndicesUnsignedInt triangle,
+            int level)
         {
-            // Canonical key: always (smaller, larger) to ensure a-b == b-a
-            var key = a < b ? (a, b) : (b, a);
-
-            if (cache.TryGetValue(key, out int existingIndex))
-                return existingIndex;
-
-            // Compute midpoint and project onto unit sphere
-            Vector3D midpoint = (positions[a] + positions[b]) * 0.5;
-            midpoint = midpoint.Normalize();
-
-            int newIndex = positions.Count;
-            positions.Add(midpoint);
-            cache[key] = newIndex;
-            return newIndex;
-        }
-
-        /// <summary>Simple struct to hold three vertex indices for a triangle.</summary>
-        private readonly struct TriangleIndices
-        {
-            public readonly int I0;
-            public readonly int I1;
-            public readonly int I2;
-
-            public TriangleIndices(int i0, int i1, int i2)
+            if (level > 0)
             {
-                I0 = i0;
-                I1 = i1;
-                I2 = i2;
+                // Midpoint of an edge on the unit sphere = (a + b) / 2,
+                // then renormalized back to unit length.
+                positions.Add(((positions[triangle.I0] + positions[triangle.I1]) * 0.5).Normalize());
+                positions.Add(((positions[triangle.I1] + positions[triangle.I2]) * 0.5).Normalize());
+                positions.Add(((positions[triangle.I2] + positions[triangle.I0]) * 0.5).Normalize());
+
+                int i01 = positions.Count - 3;
+                int i12 = positions.Count - 2;
+                int i20 = positions.Count - 1;
+
+                --level;
+                Subdivide(positions, indices, new TriangleIndicesUnsignedInt(triangle.I0, i01, i20), level);
+                Subdivide(positions, indices, new TriangleIndicesUnsignedInt(i01, triangle.I1, i12), level);
+                Subdivide(positions, indices, new TriangleIndicesUnsignedInt(i01, i12, i20), level);
+                Subdivide(positions, indices, new TriangleIndicesUnsignedInt(i20, i12, triangle.I2), level);
+            }
+            else
+            {
+                indices.AddTriangle(triangle);
             }
         }
     }
 }
 ```
 
-**How it works:**
+**Reading the recursion.** The critical invariant is that `Subdivide` appends three new position entries *before* recursing, and recursion children reference those just-appended indices by `positions.Count - 3`, `-2`, `-1`. This works only because:
 
-1. **Tetrahedron.** The four vertices from Equation 4.1 are placed on the unit sphere. They form the simplest possible closed triangular mesh.
+- Each child recursion appends its own three midpoints *after* consuming its parent's three. Indices stay stable because midpoints are never deleted.
+- The traversal is strictly depth-first -- children resolve the parent-side indices *before* they append their own.
 
-2. **Subdivision.** Each triangle is split into four by computing midpoints of its three edges. The midpoints are normalized (projected back onto the unit sphere). A dictionary prevents creating duplicate vertices when two adjacent triangles share an edge.
+Swap the order of the four recursive calls and the mesh still renders (just reordered), but swap the append-before-compute order and the indices desync.
 
-3. **Ellipsoid projection.** After all subdivisions, each unit-sphere position `(x, y, z)` is scaled by `(radii.X, radii.Y, radii.Z)` to produce the actual ellipsoid position. The geodetic surface normal is computed from the ellipsoid equation, and texture coordinates are derived from Equation 4.5.
+**Winding.** Every child triple is chosen to keep the parent's CCW orientation. If you ever modify the ordering, double-check against the diagram in the code comment above -- reversing even one child's order will invert that face's normal and cause back-face culling to erase it.
 
-### Algorithm 2: Geographic Grid
+### 21.5 Algorithm 1b: Subdivision Surfaces -- the Full Variant (Preview)
 
-The geographic grid approach parameterizes the ellipsoid directly using longitude and latitude. It sweeps longitude from 0 to 2*pi (slices) and latitude from -pi/2 to pi/2 (stacks), computing the Cartesian position at each grid point from the parametric ellipsoid equation:
+When you move to §23 (Phong shading) you will need normals and texture coordinates as well, and you will want the vertex count halved by deduping shared edge midpoints. OpenGlobe's `SubdivisionSphereTessellator.cs` (non-Simple) is the production version; it is essentially the same recursion plus:
+
+- A `[Flags]` enum `SubdivisionSphereVertexAttributes { Position, Normal, TextureCoordinate, All }` parameter.
+- Optional `"normal"` (`VertexAttributeHalfFloatVector3`) and `"textureCoordinate"` (`VertexAttributeHalfFloatVector2`) attributes, populated in lockstep with positions. For a unit sphere, the normal at a vertex *is* the vertex's position -- so `normal = position.ToVector3H()`.
+- Tex coord per vertex = `SubdivisionUtility.ComputeTextureCoordinate(position)`.
+- An internal `SubdivisionMesh` carrier struct holding the active lists, to keep the recursion signature short.
+- Optional edge-midpoint dictionary keyed by `(min, max)` index pair to dedupe shared edges (OpenGlobe's Simple variant omits this -- the full tessellator is distinct code, not a parameterized Simple).
+
+You do not need to port the full variant until §23. Mention of it here is only so the Simple version's limitations are understood in context.
+
+**Texture coordinate seam, up front.** The equirectangular mapping has a discontinuity at longitude = +/-pi: the same physical point has `u = 0` on one side and `u = 1` on the other. When you interpolate across a triangle that spans the seam, the GPU linearly ramps `u` from near 0 to near 1, producing a visibly wrong strip of backwards-mapped texture. The usual fix -- duplicating vertices at the seam with different `u` values -- is why the geographic grid below duplicates its first/last longitude column. The subdivision tessellator's triangles rarely align with the seam, so the seam cuts through individual triangles and needs more care; the book revisits this in §4.2.4.
+
+### 21.6 Algorithm 2: Geographic Grid
+
+The geographic grid parameterizes the ellipsoid directly using longitude (`theta`) and latitude (`phi`). Unlike the subdivision variants, it applies ellipsoid radii at build time -- the book does this because the resulting mesh *is* ellipsoidal, not spherical, which simplifies the shading math in §4.2 for any step that wants world-space positions on the CPU.
+
+It sweeps `theta` across `numberOfSlicePartitions` meridian slices and `phi` across `numberOfStackPartitions` latitude stacks, yielding a grid. The north and south poles are single points (one vertex each), and the grid is connected with:
+
+- **Top row**: a triangle fan from the north pole to the first ring.
+- **Middle rows**: quad grid, each quad split into two triangles.
+- **Bottom row**: a triangle fan from the south pole to the last ring.
 
 ```
-x = a * cos(latitude) * cos(longitude)
-y = b * cos(latitude) * sin(longitude)  
-z = c * sin(latitude)
+     N pole (1 vertex)
+      /|\
+     / | \     <- top fan
+    o--o--o
+    |\ |\ |
+    | \| \|   <- middle strips
+    o--o--o
+     \ | /    <- bottom fan
+      \|/
+     S pole (1 vertex)
 ```
 
-where `a`, `b`, `c` are the ellipsoid radii.
+The parametric position at `(theta, phi)` is:
 
-This produces a regular grid with predictable triangle layout, making it easy to generate texture coordinates. The downside is **pole singularity**: triangles near the poles become degenerate slivers, wasting vertex processing on near-zero-area geometry.
+```
+x = a * sin(phi) * cos(theta)
+y = b * sin(phi) * sin(theta)
+z = c * cos(phi)
+```
+
+where `phi` runs `0..pi` from north pole to south, `theta` runs `0..2pi` around. OpenGlobe precomputes `cos(theta)` / `sin(theta)` into lookup tables because the same slice angles are reused at every stack.
+
+**Vertex count.** `2 + (stacks - 1) * slices` -- two poles plus interior rings. Note OpenGlobe does *not* duplicate the seam longitude (no extra "seam column"); this means tex-coord seams must be handled by the caller at texture-bind time. If you need seam-safe UVs, budget an extra `stacks - 1` vertices and duplicate the first meridian column with `u = 1`.
+
+**Triangle count.** `2 * slices` (two pole fans) `+ 2 * (stacks - 2) * slices` (middle strips).
+
+The port is straightforward once you have the Mesh scaffolding:
 
 ```csharp
-// Geode.Core/GeographicGridEllipsoidTessellator.cs
+// Geode.Core/Tessellation/GeographicGridEllipsoidTessellator.cs
 //
 // Book Section 4.1, Listings 4.4-4.5
 // OpenGlobe: Source/Core/Tessellation/GeographicGridEllipsoidTessellator.cs
 //
-// Generates an ellipsoid mesh using a latitude-longitude grid.
-// Simple to implement, straightforward texture mapping,
-// but produces degenerate triangles at the poles.
+// Builds an ellipsoid mesh by sweeping (longitude, latitude) over a regular grid.
+// Unlike the subdivision tessellators, this one bakes in ellipsoid radii at
+// build time (its parametric formulation requires them) -- see §21.2 for why
+// that is an intentional design difference, not an inconsistency.
 
+using Geode.Core.Geometry;
 using System;
+using System.Collections.Generic;
+using System.Numerics;
 
-namespace Geode.Core
+namespace Geode.Core.Tessellation
 {
-    /// <summary>
-    /// Generates an ellipsoid mesh from a regular longitude-latitude grid.
-    /// </summary>
+    [Flags]
+    public enum GeographicGridEllipsoidVertexAttributes
+    {
+        Position          = 1,
+        Normal            = 2,
+        TextureCoordinate = 4,
+        All = Position | Normal | TextureCoordinate
+    }
+
     public static class GeographicGridEllipsoidTessellator
     {
-        /// <summary>
-        /// Computes a tessellated ellipsoid mesh using a geographic grid.
-        /// </summary>
-        /// <param name="stacks">
-        /// Number of latitude bands (rows). Must be >= 2.
-        /// Higher values produce a smoother mesh.
-        /// </param>
-        /// <param name="slices">
-        /// Number of longitude segments (columns). Must be >= 3.
-        /// Higher values produce a smoother mesh.
-        /// </param>
-        /// <param name="ellipsoid">
-        /// The ellipsoid to tessellate. Vertices are computed on this surface.
-        /// </param>
-        /// <returns>A MeshData containing interleaved vertices and triangle indices.</returns>
-        public static MeshData Compute(int stacks, int slices, Ellipsoid ellipsoid)
+        public static Mesh Compute(
+            Ellipsoid ellipsoid,
+            int numberOfSlicePartitions,
+            int numberOfStackPartitions,
+            GeographicGridEllipsoidVertexAttributes vertexAttributes)
         {
-            if (stacks < 2)
-                throw new ArgumentOutOfRangeException(nameof(stacks),
-                    "Stacks must be at least 2.");
-            if (slices < 3)
-                throw new ArgumentOutOfRangeException(nameof(slices),
-                    "Slices must be at least 3.");
+            if (numberOfSlicePartitions < 3) throw new ArgumentOutOfRangeException(nameof(numberOfSlicePartitions));
+            if (numberOfStackPartitions < 2) throw new ArgumentOutOfRangeException(nameof(numberOfStackPartitions));
+            if ((vertexAttributes & GeographicGridEllipsoidVertexAttributes.Position) == 0)
+                throw new ArgumentException("Positions must be provided.", nameof(vertexAttributes));
 
-            Vector3D radii = ellipsoid.Radii;
-
-            // Total vertices: (stacks + 1) * (slices + 1)
-            // We duplicate the first/last longitude column so texture coords
-            // wrap correctly (s=0 and s=1 are separate vertices at the seam).
-            int vertexRows = stacks + 1;
-            int vertexCols = slices + 1;
-            int vertexCount = vertexRows * vertexCols;
-
-            float[] vertices = new float[vertexCount * 8];
-
-            double deltaLat = Math.PI / stacks;
-            double deltaLon = Trigonometry.TwoPi / slices;
-
-            // ----------------------------------------------------------
-            // Generate vertices
-            // ----------------------------------------------------------
-            int vIdx = 0;
-            for (int row = 0; row <= stacks; row++)
+            Mesh mesh = new Mesh
             {
-                // Latitude ranges from +pi/2 (north pole) to -pi/2 (south pole)
-                double latitude = Trigonometry.HalfPi - row * deltaLat;
-                double cosLat = Math.Cos(latitude);
-                double sinLat = Math.Sin(latitude);
+                PrimitiveType = PrimitiveType.Triangles,
+                FrontFaceWindingOrder = WindingOrder.CounterClockwise
+            };
 
-                // Texture t coordinate: 0 at north pole, 1 at south pole
-                double t = (double)row / stacks;
+            int vertexCount    = 2 + (numberOfStackPartitions - 1) * numberOfSlicePartitions;
+            int triangleCount  = 2 * numberOfSlicePartitions
+                               + 2 * (numberOfStackPartitions - 2) * numberOfSlicePartitions;
 
-                for (int col = 0; col <= slices; col++)
+            var positionsAttribute = new VertexAttributeDoubleVector3("position", vertexCount);
+            mesh.Attributes.Add(positionsAttribute);
+
+            var indices = new IndicesUnsignedInt(3 * triangleCount);
+            mesh.Indices = indices;
+
+            IList<(Half X, Half Y, Half Z)> normals = null;
+            if ((vertexAttributes & GeographicGridEllipsoidVertexAttributes.Normal) != 0)
+            {
+                var normalsAttribute = new VertexAttributeHalfFloatVector3("normal", vertexCount);
+                mesh.Attributes.Add(normalsAttribute);
+                normals = normalsAttribute.Values;
+            }
+
+            IList<(Half X, Half Y)> texCoords = null;
+            if ((vertexAttributes & GeographicGridEllipsoidVertexAttributes.TextureCoordinate) != 0)
+            {
+                var texCoordAttribute = new VertexAttributeHalfFloatVector2("textureCoordinate", vertexCount);
+                mesh.Attributes.Add(texCoordAttribute);
+                texCoords = texCoordAttribute.Values;
+            }
+
+            // Slice LUT: theta is reused at every stack
+            double[] cosTheta = new double[numberOfSlicePartitions];
+            double[] sinTheta = new double[numberOfSlicePartitions];
+            for (int j = 0; j < numberOfSlicePartitions; j++)
+            {
+                double theta = Trigonometry.TwoPi * ((double)j / numberOfSlicePartitions);
+                cosTheta[j] = Math.Cos(theta);
+                sinTheta[j] = Math.Sin(theta);
+            }
+
+            IList<Vector3D> positions = positionsAttribute.Values;
+
+            positions.Add(new Vector3D(0, 0, ellipsoid.Radii.Z)); // north pole
+
+            for (int i = 1; i < numberOfStackPartitions; i++)
+            {
+                double phi = Math.PI * ((double)i / numberOfStackPartitions);
+                double sinPhi = Math.Sin(phi);
+                double xSinPhi = ellipsoid.Radii.X * sinPhi;
+                double ySinPhi = ellipsoid.Radii.Y * sinPhi;
+                double zCosPhi = ellipsoid.Radii.Z * Math.Cos(phi);
+
+                for (int j = 0; j < numberOfSlicePartitions; j++)
                 {
-                    // Longitude ranges from 0 to 2*pi
-                    double longitude = col * deltaLon;
-                    double cosLon = Math.Cos(longitude);
-                    double sinLon = Math.Sin(longitude);
+                    positions.Add(new Vector3D(cosTheta[j] * xSinPhi, sinTheta[j] * ySinPhi, zCosPhi));
+                }
+            }
+            positions.Add(new Vector3D(0, 0, -ellipsoid.Radii.Z)); // south pole
 
-                    // Parametric ellipsoid position
-                    double px = radii.X * cosLat * cosLon;
-                    double py = radii.Y * cosLat * sinLon;
-                    double pz = radii.Z * sinLat;
-
-                    // Geodetic surface normal
-                    Vector3D position = new Vector3D(px, py, pz);
-                    Vector3D normal = ellipsoid.GeodeticSurfaceNormal(position);
-
-                    // Texture s coordinate: 0 at the seam, 1 at the seam (wrapped)
-                    double s = (double)col / slices;
-
-                    vertices[vIdx + 0] = (float)px;
-                    vertices[vIdx + 1] = (float)py;
-                    vertices[vIdx + 2] = (float)pz;
-                    vertices[vIdx + 3] = (float)normal.X;
-                    vertices[vIdx + 4] = (float)normal.Y;
-                    vertices[vIdx + 5] = (float)normal.Z;
-                    vertices[vIdx + 6] = (float)s;
-                    vertices[vIdx + 7] = (float)t;
-
-                    vIdx += 8;
+            // Geodetic surface normal is not a pure normalize() on an ellipsoid --
+            // it needs the ellipsoid's oneOverRadiiSquared. See §5.
+            if (normals != null || texCoords != null)
+            {
+                for (int i = 0; i < positions.Count; i++)
+                {
+                    Vector3D n = ellipsoid.GeodeticSurfaceNormal(positions[i]);
+                    normals?.Add(((Half)n.X, (Half)n.Y, (Half)n.Z));
+                    if (texCoords != null)
+                    {
+                        Vector2D uv = SubdivisionUtility.ComputeTextureCoordinate(n);
+                        texCoords.Add(((Half)uv.X, (Half)uv.Y));
+                    }
                 }
             }
 
-            // ----------------------------------------------------------
-            // Generate indices
-            // ----------------------------------------------------------
-            // Each cell in the grid is a quad, split into two triangles.
-            // North pole fan: first row of quads degenerates into triangles
-            // because all top-row vertices coincide at the pole.
-            // South pole fan: same for the last row.
-            // This is handled naturally by the quad logic -- degenerate
-            // triangles are culled by the GPU (zero area).
+            // Top fan (north pole = index 0, first ring = indices 1..slices)
+            for (int j = 1; j < numberOfSlicePartitions; j++)
+                indices.AddTriangle(new TriangleIndicesUnsignedInt(0, j, j + 1));
+            indices.AddTriangle(new TriangleIndicesUnsignedInt(0, numberOfSlicePartitions, 1));
 
-            int triangleCount = stacks * slices * 2;
-            uint[] indices = new uint[triangleCount * 3];
-
-            int iIdx = 0;
-            for (int row = 0; row < stacks; row++)
+            // Middle quad rows -> two triangles per quad, CCW
+            for (int i = 0; i < numberOfStackPartitions - 2; i++)
             {
-                for (int col = 0; col < slices; col++)
+                int top    = (i * numberOfSlicePartitions) + 1;
+                int bottom = ((i + 1) * numberOfSlicePartitions) + 1;
+                for (int j = 0; j < numberOfSlicePartitions - 1; j++)
                 {
-                    // Four corners of the current grid cell
-                    uint topLeft = (uint)(row * vertexCols + col);
-                    uint topRight = topLeft + 1;
-                    uint bottomLeft = (uint)((row + 1) * vertexCols + col);
-                    uint bottomRight = bottomLeft + 1;
-
-                    // Triangle 1: top-left, bottom-left, bottom-right
-                    indices[iIdx + 0] = topLeft;
-                    indices[iIdx + 1] = bottomLeft;
-                    indices[iIdx + 2] = bottomRight;
-
-                    // Triangle 2: top-left, bottom-right, top-right
-                    indices[iIdx + 3] = topLeft;
-                    indices[iIdx + 4] = bottomRight;
-                    indices[iIdx + 5] = topRight;
-
-                    iIdx += 6;
+                    indices.AddTriangle(new TriangleIndicesUnsignedInt(bottom + j, bottom + j + 1, top + j + 1));
+                    indices.AddTriangle(new TriangleIndicesUnsignedInt(bottom + j, top + j + 1, top + j));
                 }
+                // seam wrap
+                indices.AddTriangle(new TriangleIndicesUnsignedInt(bottom + numberOfSlicePartitions - 1, bottom, top));
+                indices.AddTriangle(new TriangleIndicesUnsignedInt(bottom + numberOfSlicePartitions - 1, top, top + numberOfSlicePartitions - 1));
             }
 
-            return new MeshData(vertices, indices);
+            // Bottom fan (south pole = last index)
+            int last = positions.Count - 1;
+            for (int j = last - 1; j > last - numberOfSlicePartitions; j--)
+                indices.AddTriangle(new TriangleIndicesUnsignedInt(last, j, j - 1));
+            indices.AddTriangle(new TriangleIndicesUnsignedInt(last, last - numberOfSlicePartitions, last - 1));
+
+            return mesh;
         }
     }
 }
 ```
 
-### Comparison: Tessellation Approaches
+**Pole behavior.** Because the poles are single vertices rather than a degenerate ring, there are no zero-area triangles in the output. The trade-off is that all meridian triangles meeting the pole share one vertex, so texture detail *warps* near the poles in the opposite way from the subdivision mesh -- stretched rather than faceted. For Earth this is usually invisible (poles are mostly ice); for stylized globes it matters.
 
-| Property | Subdivision | Geographic Grid | Cube-Map (not implemented) |
-|---|---|---|---|
-| **Triangle uniformity** | Excellent -- nearly equal solid angle per triangle | Poor -- degenerate slivers at poles | Good -- uniform per face, slight distortion at corners |
-| **Texture mapping** | Requires atan2/asin computation | Natural latitude-longitude grid | Requires cube-map projection |
-| **Implementation complexity** | Medium (edge dedup dictionary) | Low (nested loops) | Medium (6 faces + stitching) |
-| **Pole behavior** | No singularity | Degenerate triangles at poles | No singularity |
-| **LOD adaptivity** | Easy (vary subdivision count) | Easy (vary stacks/slices) | Easy (vary per-face resolution) |
-| **Best for** | Uniform visual quality, low polygon count | Simple visualization, familiar parameterization | Terrain tile mapping (chapter 12+) |
+**Seam wrap.** The innermost loop over `j` handles the seam by indexing `bottom` / `top` (i.e., the slice-0 vertex) rather than `bottom + numberOfSlicePartitions`. This keeps the mesh closed with no vertex duplication; as noted above, if you need a texture seam you must duplicate a meridian yourself.
 
-**Recommendation:** Use the geographic grid for quick prototyping and texture mapping tests. Use subdivision for production rendering where triangle uniformity matters. We will use the geographic grid for most examples in this guide because it produces predictable texture coordinates.
+### 21.7 Comparison and Selection
+
+| Property | Subdivision (Simple) | Subdivision (full, deduped) | Geographic Grid | Cube-Map (future) |
+|---|---|---|---|---|
+| **Triangle uniformity** | Excellent | Excellent | Poor near poles (squat lat bands) | Good; slight corner stretch |
+| **Vertex-count efficiency** | Poor (duplicates shared edges) | Excellent | Excellent | Excellent |
+| **Texture mapping** | atan2/asin per vertex; seam issue | atan2/asin per vertex; seam issue | Natural (u=theta, v=phi) | Requires cube-map projection |
+| **Implementation complexity** | Low (~60 lines) | Medium (edge-dedup dictionary) | Medium (poles + strips + seam wrap) | Medium (6 faces + stitching) |
+| **Pole behavior** | No singularity | No singularity | Single-vertex fan (no singularity, visible stretch) | No singularity |
+| **LOD adaptivity** | Easy (n parameter) | Easy (n parameter) | Easy (stacks/slices) | Per-face resolution |
+| **Ellipsoid-awareness** | No -- unit sphere + shader | No -- unit sphere + shader | Yes -- radii baked in | Typically yes |
+| **Best for** | Pedagogy, first port | Production globe geometry | Lat/lon-indexed work, familiar parameterization | Terrain-tile pipelines (later chapters) |
+
+**Which one to use.** For the next several sections:
+- §22 / §23 wireframe + Phong globe: start with `SubdivisionSphereTessellatorSimple` at `n = 5` or `n = 6` -- enough triangles to look smooth, and the Simple variant keeps your attention on shading rather than tessellation details.
+- §24 lat/lon grid overlay: this actually uses a separate *line-primitive* tessellator, not a triangle one. The tessellator comparison above is about surface tessellators only.
+- §25 GPU ray-cast: replaces the mesh entirely with two triangles and a fragment shader.
+
+Upgrade the Simple variant to the deduped full variant (Book §21.5 preview) once you care about vertex bandwidth -- the visible output does not change.
+
+### 21.8 Wiring the Mesh Into the Renderer
+
+The tessellator returns a `Mesh`. The Rendering layer converts `Mesh -> VertexArray` (covered in §14.5 and §12). Three wire-up points worth re-emphasizing here:
+
+- `VertexAttributeDoubleVector3` expands to **two** GPU attribute streams, not one: `positionHigh` and `positionLow`, both `vec3`. The Mesh-to-VAO converter handles the split; the shader declares both inputs. See §27 for the mathematics and §14.5 for the buffer-layout mechanics. Until §27 is in place, a temporary shader can sum the two and treat them as a single `vec3` -- precision will not yet be correct at globe scale but it is enough to see a wireframe.
+- Normals and tex coords are `GL_HALF_FLOAT` uploads. The Rendering layer reads `VertexAttributeType.HalfFloatVector3` / `HalfFloatVector2` and configures `glVertexArrayAttribFormat` with `GL_HALF_FLOAT`.
+- `PrimitiveType.Triangles` and `WindingOrder.CounterClockwise` on the `Mesh` become the `RenderState.RasterizationMode.FrontFace` and the draw-call primitive type. Back-face culling can then be enabled by a `RenderState` without any tessellator change.
+
+A minimal wire-up that draws the tessellated globe as a wireframe:
+
+```csharp
+Mesh sphere = SubdivisionSphereTessellatorSimple.Compute(5);   // 1,024 leaf triangles
+VertexArray vao = renderContext.CreateVertexArray(sphere, shaderProgram.VertexAttributes, BufferHint.StaticDraw);
+// drawState.RenderState.RasterizationMode.Fill = FillMode.Line;   // wireframe
+// drawState.RenderState.FaceCulling.Enabled = false;             // see through the far side
+renderContext.Draw(sphere.PrimitiveType.ToGl(), drawState, sceneState);
+```
+
+Ellipsoid radii come in via a uniform. For WGS-84 (meters):
+
+```glsl
+uniform vec3 u_globeOneOverRadiiSquared; // 1 / (a*a, b*b, c*c)
+uniform vec3 u_globeRadii;               // (a, b, c)
+```
+
+The vertex shader multiplies the unit-sphere position by `u_globeRadii` to reach world space. See §23 for the full shader.
+
+### 21.9 Listing cross-reference
+
+| Book listing | OpenGlobe source | Geode source |
+|---|---|---|
+| 4.1 (tetrahedron coords) | `SubdivisionSphereTessellatorSimple.Compute` | `Geode.Core/Tessellation/SubdivisionSphereTessellatorSimple.cs` |
+| 4.2 (Subdivide recursion) | `SubdivisionSphereTessellatorSimple.Subdivide` | same file, `Subdivide` method |
+| 4.3 (tex-coord equation) | `SubdivisionUtility.ComputeTextureCoordinate` | `Geode.Core/Tessellation/SubdivisionUtility.cs` |
+| 4.4 (geographic grid positions) | `GeographicGridEllipsoidTessellator.Compute` | *not yet ported* |
+| 4.5 (geographic grid indices) | same | *not yet ported* |
 
 ---
 

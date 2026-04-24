@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Geode.Core.Tessellation;
 
 namespace Geode.Core.Geometry
 {
@@ -38,6 +39,13 @@ namespace Geode.Core.Geometry
             : base(IndicesType.UnsignedInt)
         {
             Values = new List<uint>(capacity);
+        }
+
+        public void AddTriangle(TriangleIndicesUnsignedInt triangle)
+        {
+            Values.Add(triangle.UI0);
+            Values.Add(triangle.UI1);
+            Values.Add(triangle.UI2);
         }
     }
 }

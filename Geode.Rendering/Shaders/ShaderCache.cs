@@ -15,6 +15,12 @@
 // they no longer need them, and the cache disposes when the refcount hits
 // zero. The cache's own Dispose disposes every remaining program.
 //
+// Creation: the cache does not know how to build a ShaderProgram itself.
+// It delegates to a factory passed in at construction -- typically
+// `Device.CreateShaderProgram`. This keeps Device as the single creation
+// primitive for shader programs (mirroring the book's architecture) and
+// keeps the cache decoupled from both GL and Device directly.
+//
 // Thread safety: all public methods are protected by a coarse-grained lock,
 // matching the book's design. Lookups from worker threads (tile preparation)
 // are safe. ShaderProgram CONSTRUCTION inside FindOrAdd, however, calls GL
@@ -34,16 +40,20 @@ namespace Geode.Rendering.Shaders
     /// </summary>
     public sealed class ShaderCache : IDisposable
     {
-        private readonly Silk.NET.OpenGL.GL _gl;
+        private readonly Func<string, string, ShaderProgram> _factory;
         private readonly Dictionary<string, Entry> _byKey = new();
         private readonly object _lock = new();
         private bool _disposed;
 
-        /// <summary>Create a cache bound to the given GL context.</summary>
-        public ShaderCache(Silk.NET.OpenGL.GL gl)
+        /// <summary>
+        /// Create a cache that builds cache-miss programs via <paramref name="factory"/>.
+        /// In normal wiring this is <c>Device.CreateShaderProgram</c>; tests can pass a
+        /// stub. The cache never calls GL directly -- every GL-touching call goes through
+        /// the factory.
+        /// </summary>
         public ShaderCache(Func<string, string, ShaderProgram> factory)
         {
-            _gl = gl ?? throw new ArgumentNullException(nameof(gl));
+            _factory = factory ?? throw new ArgumentNullException(nameof(factory));
         }
 
         /// <summary>
@@ -91,7 +101,7 @@ namespace Geode.Rendering.Shaders
                     return entry.Program;
                 }
 
-                ShaderProgram compiled = new ShaderProgram(_gl, vertexSource, fragmentSource);
+                ShaderProgram compiled = _factory(vertexSource, fragmentSource);
                 _byKey[key] = new Entry(compiled, 1);
                 return compiled;
             }
@@ -117,7 +127,7 @@ namespace Geode.Rendering.Shaders
                     return entry.Program;
                 }
 
-                ShaderProgram compiled = new ShaderProgram(_gl, vertexSource(), fragmentSource());
+                ShaderProgram compiled = _factory(vertexSource(), fragmentSource());
                 _byKey[key] = new Entry(compiled, 1);
                 return compiled;
             }

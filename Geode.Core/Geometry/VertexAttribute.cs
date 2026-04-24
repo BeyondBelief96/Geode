@@ -67,24 +67,21 @@ namespace Geode.Core.Geometry
     }
 
     /// <summary>Two half-precision floats per vertex. Targets a GLSL <c>vec2</c>.</summary>
-    /// <remarks>
-    /// Stored as a value tuple because .NET has no built-in half-vector struct.
-    /// </remarks>
-    public sealed class VertexAttributeHalfFloatVector2 : VertexAttribute<(Half X, Half Y)>
+    public sealed class VertexAttributeHalfFloatVector2 : VertexAttribute<Vector2H>
     {
         public VertexAttributeHalfFloatVector2(string name, int capacity = 0)
             : base(name, VertexAttributeType.HalfFloatVector2, capacity) { }
     }
 
     /// <summary>Three half-precision floats per vertex. Targets a GLSL <c>vec3</c>.</summary>
-    public sealed class VertexAttributeHalfFloatVector3 : VertexAttribute<(Half X, Half Y, Half Z)>
+    public sealed class VertexAttributeHalfFloatVector3 : VertexAttribute<Vector3H>
     {
         public VertexAttributeHalfFloatVector3(string name, int capacity = 0)
             : base(name, VertexAttributeType.HalfFloatVector3, capacity) { }
     }
 
     /// <summary>Four half-precision floats per vertex. Targets a GLSL <c>vec4</c>.</summary>
-    public sealed class VertexAttributeHalfFloatVector4 : VertexAttribute<(Half X, Half Y, Half Z, Half W)>
+    public sealed class VertexAttributeHalfFloatVector4 : VertexAttribute<Vector4H>
     {
         public VertexAttributeHalfFloatVector4(string name, int capacity = 0)
             : base(name, VertexAttributeType.HalfFloatVector4, capacity) { }
