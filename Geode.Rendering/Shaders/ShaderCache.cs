@@ -41,6 +41,7 @@ namespace Geode.Rendering.Shaders
 
         /// <summary>Create a cache bound to the given GL context.</summary>
         public ShaderCache(Silk.NET.OpenGL.GL gl)
+        public ShaderCache(Func<string, string, ShaderProgram> factory)
         {
             _gl = gl ?? throw new ArgumentNullException(nameof(gl));
         }
