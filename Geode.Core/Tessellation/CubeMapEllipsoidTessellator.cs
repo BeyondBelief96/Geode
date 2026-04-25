@@ -99,6 +99,8 @@ namespace Geode.Core.Tessellation
             AddFaceTriangles(ReversedArray(edge7to4), edge4to5, edge5to6, ReversedArray(edge6to7), cubeMapMesh); // Plane z = 1
             AddFaceTriangles(edge1to2, ReversedArray(edge0to1), ReversedArray(edge3to0), edge2to3, cubeMapMesh); // Plane z = -1
 
+            CubeToEllipsoid(cubeMapMesh);
+
             return mesh;
         }
 
@@ -282,6 +284,38 @@ namespace Geode.Core.Tessellation
                     indices.AddTriangle(new TriangleIndicesUnsignedInt(
                         bottomIndices[i], topIndices[i + 1], topIndices[i]));
                 }
+            }
+        }
+
+        /// <summary>
+        /// Projects each cube-space position onto the ellipsoid surface, then
+        /// (optionally) emits per-vertex normals and texture coordinates.
+        /// </summary>
+        /// <remarks>
+        /// Projection is gnomonic: normalize the cube-space ray, then scale
+        /// component-wise by the ellipsoid radii. For a unit-normalized point
+        /// <c>(x, y, z)</c> the result <c>(a·x, b·y, c·z)</c> satisfies the
+        /// ellipsoid equation <c>(X/a)² + (Y/b)² + (Z/c)² = 1</c>, so every
+        /// output vertex lies on the surface. Normals are the geodetic surface
+        /// normal at each projected point; texture coordinates are the
+        /// equirectangular mapping of that normal.
+        /// </remarks>
+        private static void CubeToEllipsoid(CubeMapMesh cubeMapMesh)
+        {
+            IList<Vector3D> positions = cubeMapMesh.Positions;
+
+            for (int i = 0; i < positions.Count; i++)
+            {
+                positions[i] = positions[i].Normalize().MultiplyComponents(cubeMapMesh.Ellipsoid.Radii);
+
+                if (cubeMapMesh.Normals == null && cubeMapMesh.TextureCoordinates == null)
+                    continue;
+
+                Vector3D geodeticSurfaceNormal = cubeMapMesh.Ellipsoid.GeodeticSurfaceNormal(positions[i]);
+
+                cubeMapMesh.Normals?.Add(new Vector3H(geodeticSurfaceNormal));
+                cubeMapMesh.TextureCoordinates?.Add(
+                    new Vector2H(SubdivisionUtility.ComputeTextureCoordinate(geodeticSurfaceNormal)));
             }
         }
 

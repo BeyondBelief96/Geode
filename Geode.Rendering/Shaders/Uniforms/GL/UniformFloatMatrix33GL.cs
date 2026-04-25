@@ -16,10 +16,12 @@ namespace Geode.Rendering.Shaders.Uniforms.GL
     /// the rest of the Silk.NET-based types in this project.
     /// </para>
     /// <para>
-    /// The matrix is uploaded with <c>transpose = true</c> so GLSL sees it in
-    /// its native column-major layout. Silk.NET / System.Numerics matrices are
-    /// row-major; the flag lets OpenGL do the transpose during upload rather
-    /// than the caller swapping fields in C#.
+    /// Uploaded with <c>transpose = GL_FALSE</c>. See
+    /// <see cref="UniformFloatMatrix44GL"/> for the full explanation; the
+    /// short version is that <see cref="Matrix3X3{T}"/> is row-major with
+    /// row-vector convention, and uploading with transpose=false (which
+    /// reads our row-major bytes as if they were column-major) gives GLSL
+    /// the column-major matrix it needs for <c>mat * vec</c>.
     /// </para>
     /// </summary>
     public sealed class UniformFloatMatrix33GL : Uniform<Matrix3X3<float>>
@@ -46,14 +48,13 @@ namespace Geode.Rendering.Shaders.Uniforms.GL
         }
 
         /// <summary>
-        /// Flush the cached 3x3 matrix to the GPU via <c>glProgramUniformMatrix3fv</c>.
-        /// Uploads with <c>transpose = true</c> to convert from row-major CPU
-        /// layout to column-major GLSL layout.
+        /// Flush the cached 3x3 matrix to the GPU. Upload uses
+        /// <c>transpose = GL_FALSE</c> — see the type-level remarks.
         /// </summary>
         public override unsafe void Clean()
         {
             Matrix3X3<float> m = CurrentValue;
-            _gl.ProgramUniformMatrix3(_program, _location, 1, true, (float*)&m);
+            _gl.ProgramUniformMatrix3(_program, _location, 1, false, (float*)&m);
             MarkClean();
         }
     }

@@ -48,6 +48,13 @@ namespace Geode.Core
         public Vector3 ToVector3() => new((float)X, (float)Y, (float)Z);
         public Vector3D ToVector3D() => new((double)X, (double)Y, (double)Z);
 
+        public void Deconstruct(out Half x, out Half y, out Half z)
+        {
+            x = X;
+            y = Y;
+            z = Z;
+        }
+
         public static explicit operator Vector3H(Vector3 v) => new(v);
         public static implicit operator Vector3(Vector3H v) => v.ToVector3();
         public static explicit operator Vector3H(Vector3D v) => new(v);

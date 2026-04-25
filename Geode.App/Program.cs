@@ -7,7 +7,7 @@ public static class Program
     public static void Main(string[] args)
     {
         // Swap this line to switch which example runs.
-        using var example = new Chapter03Triangle();
+        using var example = new TessellatorsScene();
         example.Run();
     }
 }

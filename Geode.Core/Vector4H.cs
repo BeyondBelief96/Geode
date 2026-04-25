@@ -48,6 +48,14 @@ namespace Geode.Core
 
         public Vector4 ToVector4() => new((float)X, (float)Y, (float)Z, (float)W);
 
+        public void Deconstruct(out Half x, out Half y, out Half z, out Half w)
+        {
+            x = X;
+            y = Y;
+            z = Z;
+            w = W;
+        }
+
         public static explicit operator Vector4H(Vector4 v) => new(v);
         public static implicit operator Vector4(Vector4H v) => v.ToVector4();
 
