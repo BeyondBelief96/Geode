@@ -22,15 +22,15 @@ namespace Geode.Rendering
     /// a dirty flag -- but keep the property surface identical.
     /// </para>
     /// <para>
-    /// All matrix-typed properties (<see cref="ViewMatrix"/>,
-    /// <see cref="PerspectiveMatrix"/>, <see cref="ModelViewPerspectiveMatrix"/>,
-    /// <see cref="NormalMatrix"/>) return Geode's column-major / column-vector
-    /// matrix types (<see cref="Matrix4F"/>, <see cref="Matrix3F"/>). These
-    /// upload directly to OpenGL with <c>transpose = GL_FALSE</c>. The user-
-    /// settable <see cref="ModelMatrix"/> is still <see cref="Matrix4x4"/>
-    /// (row-vector) for ergonomics — call sites can keep using
-    /// <c>Matrix4x4.CreateRotationY</c> etc. The conversion to column-vector
-    /// happens once per frame inside <see cref="ModelMatrixF"/>.
+    /// All matrix-typed properties (<see cref="ModelMatrix"/>,
+    /// <see cref="ViewMatrix"/>, <see cref="PerspectiveMatrix"/>,
+    /// <see cref="ModelViewPerspectiveMatrix"/>, <see cref="NormalMatrix"/>)
+    /// use Geode's column-major / column-vector matrix types
+    /// (<see cref="Matrix4F"/>, <see cref="Matrix3F"/>) so they upload
+    /// directly to OpenGL with <c>transpose = GL_FALSE</c>. Build model
+    /// matrices with <see cref="Matrix4F.RotationY(float)"/> etc., or convert
+    /// from <see cref="Matrix4x4"/> via
+    /// <see cref="Matrix4F.FromSystemNumerics"/> at the call site.
     /// </para>
     /// </remarks>
     public class SceneState
@@ -48,16 +48,16 @@ namespace Geode.Rendering
 
         /// <summary>
         /// Model matrix for the object being drawn. Applied first in the
-        /// transform chain. Default: identity (object is in world space).
+        /// transform chain. Default: <see cref="Matrix4F.Identity"/>.
         /// </summary>
         /// <remarks>
-        /// Stored as <see cref="Matrix4x4"/> (row-vector convention) so that
-        /// callers can compose with <c>Matrix4x4.CreateRotationY</c> etc.
-        /// Internally the renderer uses <see cref="ModelMatrixF"/>, the
-        /// column-vector form, in matrix products with <see cref="ViewMatrix"/>
-        /// and <see cref="PerspectiveMatrix"/>.
+        /// Build from <see cref="Matrix4F"/> factories
+        /// (<see cref="Matrix4F.RotationY(float)"/>,
+        /// <see cref="Matrix4F.Translation(float, float, float)"/>, etc.) or
+        /// convert from a <see cref="Matrix4x4"/> via
+        /// <see cref="Matrix4F.FromSystemNumerics"/>.
         /// </remarks>
-        public Matrix4x4 ModelMatrix { get; set; } = Matrix4x4.Identity;
+        public Matrix4F ModelMatrix { get; set; } = Matrix4F.Identity;
 
         /// <summary>
         /// World-space position of a light attached to the camera ("headlamp").
@@ -139,14 +139,6 @@ namespace Geode.Rendering
         #region Derived matrices
 
         /// <summary>
-        /// <see cref="ModelMatrix"/> converted to column-vector convention
-        /// (transposed). This is the form used in matrix products with
-        /// <see cref="ViewMatrix"/> and <see cref="PerspectiveMatrix"/>, and
-        /// the form uploaded to <c>geode_modelMatrix</c>.
-        /// </summary>
-        public Matrix4F ModelMatrixF => Matrix4F.FromSystemNumerics(ModelMatrix);
-
-        /// <summary>
         /// View matrix in column-vector convention. Computed from the camera
         /// each access. Maps world space → eye space.
         /// </summary>
@@ -166,7 +158,7 @@ namespace Geode.Rendering
         /// Perspective.
         /// </summary>
         public Matrix4F ModelViewPerspectiveMatrix =>
-            PerspectiveMatrix * ViewMatrix * ModelMatrixF;
+            PerspectiveMatrix * ViewMatrix * ModelMatrix;
 
         /// <summary>
         /// Normal matrix -- the inverse-transpose of the upper 3×3 of the
@@ -178,7 +170,7 @@ namespace Geode.Rendering
         {
             get
             {
-                Matrix4F mv = ViewMatrix * ModelMatrixF;
+                Matrix4F mv = ViewMatrix * ModelMatrix;
                 return InverseTransposeUpper3x3(mv);
             }
         }

@@ -253,7 +253,7 @@ public sealed class TessellatorsScene : IDisposable
         if (_rotate) _elapsed += deltaTime;
 
         float angle = (float)(_elapsed * 0.6);
-        _sceneState.ModelMatrix = Matrix4x4.CreateRotationY(angle);
+        _sceneState.ModelMatrix = Matrix4F.RotationY(angle);
 
         RenderContext context = _window.Context;
         context.Clear(_clearState);

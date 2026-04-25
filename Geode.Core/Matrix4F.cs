@@ -83,6 +83,63 @@ namespace Geode.Core
             0, 0, 0, 1);
 
         /// <summary>
+        /// Translation matrix. Translation lives in column 3 (column-vector
+        /// convention), so applying via <c>M * v</c> shifts a position vector
+        /// by <c>(x, y, z)</c>.
+        /// </summary>
+        public static Matrix4F Translation(float x, float y, float z) => new(
+            1, 0, 0, x,
+            0, 1, 0, y,
+            0, 0, 1, z,
+            0, 0, 0, 1);
+
+        /// <summary>Rotation around the X axis by <paramref name="radians"/> (right-hand rule).</summary>
+        public static Matrix4F RotationX(float radians)
+        {
+            float c = MathF.Cos(radians);
+            float s = MathF.Sin(radians);
+            return new Matrix4F(
+                1, 0,  0, 0,
+                0, c, -s, 0,
+                0, s,  c, 0,
+                0, 0,  0, 1);
+        }
+
+        /// <summary>Rotation around the Y axis by <paramref name="radians"/> (right-hand rule).</summary>
+        public static Matrix4F RotationY(float radians)
+        {
+            float c = MathF.Cos(radians);
+            float s = MathF.Sin(radians);
+            return new Matrix4F(
+                 c, 0, s, 0,
+                 0, 1, 0, 0,
+                -s, 0, c, 0,
+                 0, 0, 0, 1);
+        }
+
+        /// <summary>Rotation around the Z axis by <paramref name="radians"/> (right-hand rule).</summary>
+        public static Matrix4F RotationZ(float radians)
+        {
+            float c = MathF.Cos(radians);
+            float s = MathF.Sin(radians);
+            return new Matrix4F(
+                c, -s, 0, 0,
+                s,  c, 0, 0,
+                0,  0, 1, 0,
+                0,  0, 0, 1);
+        }
+
+        /// <summary>Uniform scale by <paramref name="s"/> on all three axes.</summary>
+        public static Matrix4F Scale(float s) => Scale(s, s, s);
+
+        /// <summary>Non-uniform scale.</summary>
+        public static Matrix4F Scale(float x, float y, float z) => new(
+            x, 0, 0, 0,
+            0, y, 0, 0,
+            0, 0, z, 0,
+            0, 0, 0, 1);
+
+        /// <summary>
         /// Converts a <see cref="Matrix4x4"/> (row-vector convention) into a
         /// <see cref="Matrix4F"/> (column-vector convention) by transposing.
         /// Use this when you need to feed a System.Numerics matrix into the

@@ -30,7 +30,7 @@ namespace Geode.Rendering.Shaders.Uniforms.DrawAutomaticUniforms
 
         public override void Set(RenderContext ctx, DrawState ds, SceneState ss)
         {
-            _uniform.Value = ss.ModelMatrixF;
+            _uniform.Value = ss.ModelMatrix;
         }
     }
 }
