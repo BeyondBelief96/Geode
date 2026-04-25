@@ -29,6 +29,7 @@
 // Non-DSA GL functions (glCreateShader, glLinkProgram, glAttachShader) are
 // used because the DSA specification does not cover shader objects.
 
+using Geode.Core;
 using Geode.Rendering.Shaders.Uniforms;
 using Geode.Rendering.Shaders.Uniforms.GL;
 using Silk.NET.OpenGL;
@@ -212,9 +213,17 @@ namespace Geode.Rendering.Shaders
         public void SetVec4(string name, Vector4 value)
             => ((Uniform<Vector4>)_uniforms[name]).Value = value;
 
-        /// <summary>Set a <c>mat4</c> uniform from a <see cref="Matrix4x4"/>.</summary>
+        /// <summary>Set a <c>mat4</c> uniform from a <see cref="Matrix4F"/>.</summary>
+        public void SetMat4(string name, Matrix4F value)
+            => ((Uniform<Matrix4F>)_uniforms[name]).Value = value;
+
+        /// <summary>
+        /// Set a <c>mat4</c> uniform from a <see cref="Matrix4x4"/>. Converts
+        /// from row-vector to column-vector convention via
+        /// <see cref="Matrix4F.FromSystemNumerics"/>.
+        /// </summary>
         public void SetMat4(string name, Matrix4x4 value)
-            => ((Uniform<Matrix4x4>)_uniforms[name]).Value = value;
+            => SetMat4(name, Matrix4F.FromSystemNumerics(value));
 
         // ---------------------------------------------------------------
         // ICleanableObserver

@@ -1,6 +1,6 @@
+using Geode.Core;
 using Geode.Rendering.State;
 using Geode.Rendering.Uniforms;
-using System.Numerics;
 
 namespace Geode.Rendering.Shaders.Uniforms.DrawAutomaticUniforms
 {
@@ -16,21 +16,21 @@ namespace Geode.Rendering.Shaders.Uniforms.DrawAutomaticUniforms
         public override string Name => "geode_modelMatrix";
         public override UniformType DataType => UniformType.FloatMatrix44;
         public override DrawAutomaticUniform Create(Uniform uniform) =>
-            new ModelMatrixUniform((Uniform<Matrix4x4>)uniform);
+            new ModelMatrixUniform((Uniform<Matrix4F>)uniform);
     }
 
     internal sealed class ModelMatrixUniform : DrawAutomaticUniform
     {
-        private readonly Uniform<Matrix4x4> _uniform;
+        private readonly Uniform<Matrix4F> _uniform;
 
-        public ModelMatrixUniform(Uniform<Matrix4x4> uniform)
+        public ModelMatrixUniform(Uniform<Matrix4F> uniform)
         {
             _uniform = uniform;
         }
 
         public override void Set(RenderContext ctx, DrawState ds, SceneState ss)
         {
-            _uniform.Value = ss.ModelMatrix;
+            _uniform.Value = ss.ModelMatrixF;
         }
     }
 }

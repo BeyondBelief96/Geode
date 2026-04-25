@@ -1,8 +1,8 @@
 using System;
 using System.Numerics;
+using Geode.Core;
 // Alias to avoid a name clash with Silk.NET.Maths.Vector3D<T>.
 using Vector3D = Geode.Core.Vector3D;
-using Matrix3X3 = Silk.NET.Maths.Matrix3X3<float>;
 using Geode.Rendering.State;
 
 namespace Geode.Rendering
@@ -13,12 +13,25 @@ namespace Geode.Rendering
     /// uniform subsystem pulls from (matrices, viewport, etc.).
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Many of the properties here are <em>derived</em> from <see cref="Camera"/>
     /// and <see cref="ModelMatrix"/>. They are implemented as computed properties
     /// rather than cached values so that mutating the camera / model / sun
     /// reflects in the next draw without explicit invalidation bookkeeping.
     /// If profiling later shows matrix recomputation is hot, cache them behind
     /// a dirty flag -- but keep the property surface identical.
+    /// </para>
+    /// <para>
+    /// All matrix-typed properties (<see cref="ViewMatrix"/>,
+    /// <see cref="PerspectiveMatrix"/>, <see cref="ModelViewPerspectiveMatrix"/>,
+    /// <see cref="NormalMatrix"/>) return Geode's column-major / column-vector
+    /// matrix types (<see cref="Matrix4F"/>, <see cref="Matrix3F"/>). These
+    /// upload directly to OpenGL with <c>transpose = GL_FALSE</c>. The user-
+    /// settable <see cref="ModelMatrix"/> is still <see cref="Matrix4x4"/>
+    /// (row-vector) for ergonomics — call sites can keep using
+    /// <c>Matrix4x4.CreateRotationY</c> etc. The conversion to column-vector
+    /// happens once per frame inside <see cref="ModelMatrixF"/>.
+    /// </para>
     /// </remarks>
     public class SceneState
     {
@@ -37,6 +50,13 @@ namespace Geode.Rendering
         /// Model matrix for the object being drawn. Applied first in the
         /// transform chain. Default: identity (object is in world space).
         /// </summary>
+        /// <remarks>
+        /// Stored as <see cref="Matrix4x4"/> (row-vector convention) so that
+        /// callers can compose with <c>Matrix4x4.CreateRotationY</c> etc.
+        /// Internally the renderer uses <see cref="ModelMatrixF"/>, the
+        /// column-vector form, in matrix products with <see cref="ViewMatrix"/>
+        /// and <see cref="PerspectiveMatrix"/>.
+        /// </remarks>
         public Matrix4x4 ModelMatrix { get; set; } = Matrix4x4.Identity;
 
         /// <summary>
@@ -119,99 +139,94 @@ namespace Geode.Rendering
         #region Derived matrices
 
         /// <summary>
-        /// View matrix cast to single precision. Computed from the double-precision
-        /// <see cref="ComputeViewMatrix"/> each access.
+        /// <see cref="ModelMatrix"/> converted to column-vector convention
+        /// (transposed). This is the form used in matrix products with
+        /// <see cref="ViewMatrix"/> and <see cref="PerspectiveMatrix"/>, and
+        /// the form uploaded to <c>geode_modelMatrix</c>.
         /// </summary>
-        public Matrix4x4 ViewMatrix => DoubleArrayToMatrix4x4(ComputeViewMatrix());
+        public Matrix4F ModelMatrixF => Matrix4F.FromSystemNumerics(ModelMatrix);
 
         /// <summary>
-        /// Perspective projection matrix cast to single precision. Computed from
-        /// the double-precision <see cref="ComputePerspectiveMatrix"/> each access.
+        /// View matrix in column-vector convention. Computed from the camera
+        /// each access. Maps world space → eye space.
         /// </summary>
-        public Matrix4x4 PerspectiveMatrix => DoubleArrayToMatrix4x4(ComputePerspectiveMatrix());
+        public Matrix4F ViewMatrix => ComputeViewMatrix();
 
         /// <summary>
-        /// Combined Model-View-Perspective matrix. Uses row-major
-        /// <see cref="System.Numerics"/> multiplication order:
-        /// <c>Model * View * Perspective</c>. Upload with <c>transpose = true</c>
-        /// so GLSL sees the column-major equivalent.
+        /// Perspective projection matrix in column-vector convention. Uses
+        /// <c>[0, 1]</c> depth range (for
+        /// <c>glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE)</c>).
         /// </summary>
-        public Matrix4x4 ModelViewPerspectiveMatrix =>
-            ModelMatrix * ViewMatrix * PerspectiveMatrix;
+        public Matrix4F PerspectiveMatrix => ComputePerspectiveMatrix();
 
         /// <summary>
-        /// Normal matrix -- the transpose of the inverse of the upper 3x3 of
-        /// the model-view matrix. Transforms normals from model space to eye
+        /// Combined model-view-perspective matrix in column-vector convention.
+        /// Composition reads right-to-left: <c>P * V * M</c>, so applying
+        /// to a column vector first transforms by Model, then View, then
+        /// Perspective.
+        /// </summary>
+        public Matrix4F ModelViewPerspectiveMatrix =>
+            PerspectiveMatrix * ViewMatrix * ModelMatrixF;
+
+        /// <summary>
+        /// Normal matrix -- the inverse-transpose of the upper 3×3 of the
+        /// model-view matrix. Transforms normals from model space to eye
         /// space without introducing scale distortion when the model-view
         /// includes non-uniform scale.
         /// </summary>
-        public Matrix3X3 NormalMatrix
+        public Matrix3F NormalMatrix
         {
             get
             {
-                Matrix4x4 mv = ModelMatrix * ViewMatrix;
-                Matrix4x4 upper3x3 = new Matrix4x4(
-                    mv.M11, mv.M12, mv.M13, 0,
-                    mv.M21, mv.M22, mv.M23, 0,
-                    mv.M31, mv.M32, mv.M33, 0,
-                    0,      0,      0,      1);
-                if (!Matrix4x4.Invert(upper3x3, out Matrix4x4 inv))
-                    return new Matrix3X3(
-                        1, 0, 0,
-                        0, 1, 0,
-                        0, 0, 1);
-                // Transpose of inverse of upper 3x3.
-                return new Matrix3X3(
-                    inv.M11, inv.M21, inv.M31,
-                    inv.M12, inv.M22, inv.M32,
-                    inv.M13, inv.M23, inv.M33);
+                Matrix4F mv = ViewMatrix * ModelMatrixF;
+                return InverseTransposeUpper3x3(mv);
             }
         }
 
         #endregion
 
-        #region Double-precision matrix computation (existing)
+        #region Matrix construction (column-vector)
 
         /// <summary>
-        /// Computes the view matrix from the current camera, in double precision.
-        /// Returns a 16-element array in column-major order.
+        /// Builds the column-vector view matrix from the current camera.
         /// </summary>
-        public double[] ComputeViewMatrix()
+        /// <remarks>
+        /// In column-vector form the view matrix is
+        /// <code>
+        ///   [  right.x      right.y      right.z     -right·eye  ]
+        ///   [  trueUp.x     trueUp.y     trueUp.z    -trueUp·eye ]
+        ///   [ -forward.x   -forward.y   -forward.z    forward·eye]
+        ///   [  0            0            0            1          ]
+        /// </code>
+        /// The third row uses <c>-forward</c> because OpenGL's eye space looks
+        /// down <c>-Z</c> (objects in front of the camera have negative eye-space z).
+        /// Computation runs in double precision (<see cref="Vector3D"/>) and
+        /// downcasts to <see cref="float"/> when populating the matrix; this
+        /// keeps geodetic camera math accurate at planetary scale.
+        /// </remarks>
+        public Matrix4F ComputeViewMatrix()
         {
             Vector3D eye = Camera.Eye;
             Vector3D target = Camera.Target;
             Vector3D up = Camera.Up;
 
-            // Forward direction - From eye to target
             Vector3D forward = (target - eye).Normalize();
-
-            // Right direction - Perpendicular to forward and up
             Vector3D right = forward.Cross(up).Normalize();
-
-            // True up direction - Perpendicular to right and forward
             Vector3D trueUp = right.Cross(forward);
 
-            // View matrix construction
-            // View matrix in column-major order.
-            // The matrix simultaneously rotates and translates:
-            //   - Rotation: aligns world axes to camera axes
-            //   - Translation: moves origin to camera position
-            // The negation of forward is because OpenGL eye space looks down -Z.
-            return new double[16]
-            {
-                right.X,     trueUp.X,    -forward.X,   0,
-                right.Y,     trueUp.Y,    -forward.Y,   0,
-                right.Z,     trueUp.Z,    -forward.Z,   0,
-                -right.Dot(eye), -trueUp.Dot(eye), forward.Dot(eye), 1
-            };
+            return new Matrix4F(
+                (float)right.X,     (float)right.Y,     (float)right.Z,     (float)(-right.Dot(eye)),
+                (float)trueUp.X,    (float)trueUp.Y,    (float)trueUp.Z,    (float)(-trueUp.Dot(eye)),
+                (float)(-forward.X),(float)(-forward.Y),(float)(-forward.Z),(float)forward.Dot(eye),
+                0,                  0,                  0,                  1);
         }
 
         /// <summary>
-        /// Computes the perspective projection matrix in double precision.
-        /// Uses [0, 1] depth range (for glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE)).
-        /// Returns a 16-element array in column-major order.
+        /// Builds the column-vector perspective projection matrix from the
+        /// current camera. <c>[0, 1]</c> depth range; matches what
+        /// <c>glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE)</c> expects.
         /// </summary>
-        public double[] ComputePerspectiveMatrix()
+        public Matrix4F ComputePerspectiveMatrix()
         {
             double fovY = Camera.FieldOfViewY;
             double aspect = Camera.AspectRatio;
@@ -220,34 +235,53 @@ namespace Geode.Rendering
 
             double tanHalfFov = Math.Tan(fovY / 2.0);
 
-            // Perspective matrix for [0, 1] depth range.
-            // This differs from the standard [-1, 1] matrix in row 2:
-            //   Standard:  -(f+n)/(f-n)  and  -2fn/(f-n)
-            //   [0,1]:     -f/(f-n)      and  -fn/(f-n)
-            return new double[16]
-            {
-                1.0 / (aspect * tanHalfFov), 0,                  0,                    0,
-                0,                           1.0 / tanHalfFov,   0,                    0,
-                0,                           0,                  -far / (far - near),  -1,
-                0,                           0,                  -(far * near) / (far - near), 0
-            };
+            // Perspective matrix for [0, 1] depth range. Differs from the
+            // standard [-1, 1] form in the row-2 entries:
+            //   Standard: -(f+n)/(f-n)  and  -2fn/(f-n)
+            //   [0, 1]:   -f/(f-n)      and  -fn/(f-n)
+            return new Matrix4F(
+                (float)(1.0 / (aspect * tanHalfFov)), 0,                          0,                              0,
+                0,                                    (float)(1.0 / tanHalfFov),  0,                              0,
+                0,                                    0,                          (float)(-far / (far - near)),   (float)(-(far * near) / (far - near)),
+                0,                                    0,                          -1,                             0);
         }
 
         /// <summary>
-        /// Converts a column-major 16-element double array (produced by
-        /// <see cref="ComputeViewMatrix"/> / <see cref="ComputePerspectiveMatrix"/>)
-        /// to a row-major <see cref="Matrix4x4"/>. The transpose is implicit --
-        /// the storage layout is row-major after this conversion, which is what
-        /// <see cref="System.Numerics"/> expects and what the
-        /// <c>transpose = true</c> upload in the uniform classes assumes.
+        /// Computes the inverse-transpose of the upper 3×3 of a column-vector
+        /// 4×4 matrix. Used by <see cref="NormalMatrix"/>.
         /// </summary>
-        private static Matrix4x4 DoubleArrayToMatrix4x4(double[] m)
+        /// <remarks>
+        /// Operates in float; for planetary-scale model-view matrices this is
+        /// fine because the normal matrix only depends on rotation/scale, not
+        /// translation. Returns identity if the matrix is singular.
+        /// </remarks>
+        private static Matrix3F InverseTransposeUpper3x3(Matrix4F m)
         {
-            return new Matrix4x4(
-                (float)m[0], (float)m[1], (float)m[2], (float)m[3],
-                (float)m[4], (float)m[5], (float)m[6], (float)m[7],
-                (float)m[8], (float)m[9], (float)m[10], (float)m[11],
-                (float)m[12], (float)m[13], (float)m[14], (float)m[15]);
+            float a = m.Col0Row0, b = m.Col1Row0, c = m.Col2Row0;
+            float d = m.Col0Row1, e = m.Col1Row1, f = m.Col2Row1;
+            float g = m.Col0Row2, h = m.Col1Row2, i = m.Col2Row2;
+
+            // Cofactor matrix entries (also the transpose of the adjugate).
+            float A =  (e * i - f * h);
+            float B = -(d * i - f * g);
+            float C =  (d * h - e * g);
+            float D = -(b * i - c * h);
+            float E =  (a * i - c * g);
+            float F = -(a * h - b * g);
+            float G =  (b * f - c * e);
+            float H = -(a * f - c * d);
+            float I =  (a * e - b * d);
+
+            float det = a * A + b * B + c * C;
+            if (det == 0) return Matrix3F.Identity;
+            float inv = 1f / det;
+
+            // (1/det) * cofactor matrix = inverse-transpose. Filling row-by-row
+            // in the constructor (Matrix3F constructor takes visual rows).
+            return new Matrix3F(
+                A * inv, B * inv, C * inv,
+                D * inv, E * inv, F * inv,
+                G * inv, H * inv, I * inv);
         }
 
         #endregion

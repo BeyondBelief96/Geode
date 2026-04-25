@@ -23,7 +23,8 @@
       "Read(//c/c/Users/brand/source/repos/Geode/.claude/worktrees/pedantic-williams-ec3f43/**)",
       "Read(//c/c/Users/brand/source/repos/Geode/.claude/worktrees/**)",
       "Bash(awk NR>=5185 && NR<=5800 *)",
-      "Bash(xargs cat *)"
+      "Bash(xargs cat *)",
+      "Bash(curl *)"
     ]
   }
 }

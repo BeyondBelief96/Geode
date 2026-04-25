@@ -1,6 +1,6 @@
+using Geode.Core;
 using Geode.Rendering.State;
 using Geode.Rendering.Uniforms;
-using Silk.NET.Maths;
 
 namespace Geode.Rendering.Shaders.Uniforms.DrawAutomaticUniforms
 {
@@ -16,14 +16,14 @@ namespace Geode.Rendering.Shaders.Uniforms.DrawAutomaticUniforms
         public override string Name => "geode_normalMatrix";
         public override UniformType DataType => UniformType.FloatMatrix33;
         public override DrawAutomaticUniform Create(Uniform uniform) =>
-            new NormalMatrixUniform((Uniform<Matrix3X3<float>>)uniform);
+            new NormalMatrixUniform((Uniform<Matrix3F>)uniform);
     }
 
     internal sealed class NormalMatrixUniform : DrawAutomaticUniform
     {
-        private readonly Uniform<Matrix3X3<float>> _uniform;
+        private readonly Uniform<Matrix3F> _uniform;
 
-        public NormalMatrixUniform(Uniform<Matrix3X3<float>> uniform)
+        public NormalMatrixUniform(Uniform<Matrix3F> uniform)
         {
             _uniform = uniform;
         }
