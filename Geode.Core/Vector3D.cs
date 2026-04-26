@@ -83,5 +83,11 @@ namespace Geode.Core
         public override string ToString() => $"({X}, {Y}, {Z})";
 
         #endregion
+
+        #region Conversions
+
+        public Vector3H ToVector3H() => new Vector3H(X, Y, Z);
+
+        #endregion
     }
 }

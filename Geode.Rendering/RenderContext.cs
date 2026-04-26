@@ -273,9 +273,17 @@ namespace Geode.Rendering
         ///   <item>Every active shader attribute must have a same-name mesh attribute.
         ///     A missing match throws with a descriptive error.</item>
         ///   <item><see cref="VertexAttributeType.EmulatedDoubleVector3"/> mesh
-        ///     attributes feed two shader attributes: <c>"nameHigh"</c> and
-        ///     <c>"nameLow"</c>. Both halves must be present in the shader or the
-        ///     call throws.</item>
+        ///     attributes also feed the optional RTE pair <c>"nameHigh"</c> /
+        ///     <c>"nameLow"</c>. Either both halves are present in the shader
+        ///     or neither is. When the shader binds the base name directly
+        ///     (e.g. <c>in vec3 position</c>), the attribute is uploaded as a
+        ///     plain float cast and the low-part residual is dropped.</item>
+        ///   <item>When the mesh provides fewer components than the shader
+        ///     declares (e.g. mesh <c>vec3</c> bound to shader <c>vec4</c>),
+        ///     the missing components default to <c>(0, 0, 0, 1)</c> per the
+        ///     standard <c>glVertexAttrib</c> defaults -- the same behavior
+        ///     the OpenGlobe sample code relies on. Mesh providing <i>more</i>
+        ///     components than the shader still throws.</item>
         /// </list>
         /// </remarks>
         public VertexArrayObject CreateVertexArray(Mesh mesh, ShaderProgram shader, BufferHint bufferHint)
@@ -381,9 +389,18 @@ namespace Geode.Rendering
                 if (mesh.Attributes.Contains(name))
                 {
                     VertexAttribute meshAttr = mesh.Attributes[name];
-                    ValidateComponentMatch(name, meshAttr, info);
+                    int meshComponents = MeshComponentCount(name, meshAttr);
+                    if (meshComponents > info.Components)
+                    {
+                        throw new InvalidOperationException(
+                            $"Attribute '{name}' component overflow: shader expects " +
+                            $"{info.Components}, mesh provides {meshComponents}.");
+                    }
+                    // meshComponents <= info.Components is fine: GL fills the
+                    // missing components with (0, 0, 0, 1) at draw time. We
+                    // upload only the components the mesh actually has.
                     bindings.Add(new AttributeBinding(
-                        info.Location, info.Components, info.Type,
+                        info.Location, meshComponents, info.Type,
                         NormalizedForType(meshAttr.DataType),
                         meshAttr, DoubleSplit.None, 0));
                     consumed.Add(name);
@@ -440,10 +457,8 @@ namespace Geode.Rendering
             return null;
         }
 
-        private static void ValidateComponentMatch(
-            string name, VertexAttribute meshAttr, ShaderAttribInfo info)
-        {
-            int meshComponents = meshAttr.DataType switch
+        private static int MeshComponentCount(string name, VertexAttribute meshAttr) =>
+            meshAttr.DataType switch
             {
                 VertexAttributeType.UnsignedByte => 1,
                 VertexAttributeType.HalfFloat or VertexAttributeType.Float => 1,
@@ -454,13 +469,6 @@ namespace Geode.Rendering
                 _ => throw new NotSupportedException(
                     $"Mesh attribute '{name}' has unsupported type {meshAttr.DataType}.")
             };
-            if (meshComponents != info.Components)
-            {
-                throw new InvalidOperationException(
-                    $"Attribute '{name}' component mismatch: shader expects " +
-                    $"{info.Components}, mesh provides {meshComponents}.");
-            }
-        }
 
         private static bool NormalizedForType(VertexAttributeType t)
             => t == VertexAttributeType.UnsignedByte;
@@ -586,11 +594,16 @@ namespace Geode.Rendering
                     {
                         // DSFP/RTE split: high = (float)d; low = (float)(d - high).
                         // Both halves together reconstruct the double to 2^-24 + 2^-53 error.
+                        // For DoubleSplit.None the shader binds the attribute directly
+                        // without an RTE pair, so we drop the residual and upload the
+                        // float cast only -- equivalent to OpenGlobe's default flow.
                         Vector3D d = a.Values[vertex];
                         float hx = (float)d.X, hy = (float)d.Y, hz = (float)d.Z;
-                        Vector3 w = split == DoubleSplit.High
-                            ? new Vector3(hx, hy, hz)
-                            : new Vector3((float)(d.X - hx), (float)(d.Y - hy), (float)(d.Z - hz));
+                        Vector3 w = split switch
+                        {
+                            DoubleSplit.Low => new Vector3((float)(d.X - hx), (float)(d.Y - hy), (float)(d.Z - hz)),
+                            _               => new Vector3(hx, hy, hz),
+                        };
                         MemoryMarshal.Write(dest, in w);
                         return;
                     }

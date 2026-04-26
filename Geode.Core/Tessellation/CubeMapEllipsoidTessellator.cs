@@ -315,7 +315,7 @@ namespace Geode.Core.Tessellation
 
                 cubeMapMesh.Normals?.Add(new Vector3H(geodeticSurfaceNormal));
                 cubeMapMesh.TextureCoordinates?.Add(
-                    new Vector2H(SubdivisionUtility.ComputeTextureCoordinate(geodeticSurfaceNormal)));
+                    SubdivisionUtility.ComputeTextureCoordinate(geodeticSurfaceNormal));
             }
         }
 

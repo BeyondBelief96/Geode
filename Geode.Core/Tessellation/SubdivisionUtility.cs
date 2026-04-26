@@ -72,9 +72,9 @@ namespace Geode.Core.Tessellation
         /// </remarks>
         /// <param name="position">A point on the unit sphere.</param>
         /// <returns>The (u, v) texture coordinate for the point.</returns>
-        public static Vector2D ComputeTextureCoordinate(Vector3D position)
+        public static Vector2H ComputeTextureCoordinate(Vector3D position)
         {
-            return new Vector2D(Math.Atan2(position.Y, position.X) / Trigonometry.TwoPi + 0.5, Math.Asin(position.Z) / Math.PI + 0.5);
+            return new Vector2H(Math.Atan2(position.Y, position.X) / Trigonometry.TwoPi + 0.5, Math.Asin(position.Z) / Math.PI + 0.5);
         }
     }
 }

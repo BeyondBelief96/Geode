@@ -18,4 +18,10 @@
     <ProjectReference Include="..\Geode.Visualization\Geode.Visualization.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Examples\Shaders\*.vert;Examples\Shaders\*.frag">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

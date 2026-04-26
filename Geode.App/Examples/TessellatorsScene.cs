@@ -9,6 +9,7 @@ using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using System;
+using System.IO;
 using System.Numerics;
 using PrimitiveType = Geode.Core.Geometry.PrimitiveType;
 // Silk also exports a generic Vector3D<T>; disambiguate to Geode's double-precision one.
@@ -17,22 +18,30 @@ using Vector3D = Geode.Core.Vector3D;
 namespace Geode.App.Examples;
 
 /// <summary>
-/// Visual comparison of the two tessellators in <c>Geode.Core.Tessellation</c>:
-/// <see cref="SubdivisionSphereTessellatorSimple"/> and
-/// <see cref="CubeMapEllipsoidTessellator"/>. Auto-rotates the mesh; keyboard
-/// swaps tessellator, adjusts subdivision level, and toggles wireframe.
+/// Visual comparison of the tessellators in <c>Geode.Core.Tessellation</c>:
+/// <see cref="SubdivisionSphereTessellatorSimple"/>,
+/// <see cref="CubeMapEllipsoidTessellator"/>, and
+/// <see cref="GeographicGridEllipsoidTessellator"/>. Auto-rotates the mesh;
+/// keyboard swaps tessellator, adjusts subdivision level, and toggles wireframe.
 /// </summary>
 /// <remarks>
-/// Both tessellators emit positions as an <c>EmulatedDoubleVector3</c> named
-/// "position", so the vertex shader declares <c>positionHigh</c> and
-/// <c>positionLow</c>. For a unit-scale mesh the "low" contribution is tiny,
-/// but wiring it up exercises the RTE/DSFP split path end-to-end. Fragment
-/// colors come from the surface direction, so the shape is legible without
-/// any lighting setup.
+/// The tessellators emit positions as an <c>EmulatedDoubleVector3</c>
+/// (DSFP/RTE high+low split) named "position". The Mesh-to-VAO bridge in
+/// <see cref="RenderContext.CreateVertexArray"/> binds that attribute
+/// directly to the shader's <c>in vec4 position</c> -- the double is
+/// uploaded as a float cast, and OpenGL fills the missing <c>w</c>
+/// component with <c>1.0</c>. Switching to the RTE path later is a shader
+/// change only: declare <c>positionHigh</c> + <c>positionLow</c> and the
+/// bridge picks up the split automatically.
+///
+/// Shading is the diffuse-lighting model from "3D Engine Design for Virtual
+/// Globes" Listing 4.7 (camera-attached headlamp). The shader source lives
+/// in <c>Examples/Shaders/Tessellators.{vert,frag}</c>; those files are
+/// copied next to the executable by the .csproj.
 /// </remarks>
 public sealed class TessellatorsScene : IDisposable
 {
-    private enum TessellatorKind { SubdivisionSphere, CubeMap }
+    private enum TessellatorKind { SubdivisionSphere, CubeMap, GeographicGrid }
 
     private readonly GraphicsWindow _window;
     private readonly SceneState _sceneState = new();
@@ -78,7 +87,10 @@ public sealed class TessellatorsScene : IDisposable
         foreach (IKeyboard keyboard in input.Keyboards)
             keyboard.KeyDown += OnKeyDown;
 
-        _shaderProgram = device.CreateShaderProgram(VertexShaderSource, FragmentShaderSource);
+        string shaderDir = Path.Combine(AppContext.BaseDirectory, "Examples", "Shaders");
+        _shaderProgram = device.CreateShaderProgramFromFiles(
+            Path.Combine(shaderDir, "Tessellators.vert"),
+            Path.Combine(shaderDir, "Tessellators.frag"));
 
         BuildMesh();
 
@@ -94,6 +106,12 @@ public sealed class TessellatorsScene : IDisposable
             (double)_window.Window.Size.X / _window.Window.Size.Y;
         _sceneState.Viewport = new Vector4(0, 0,
             _window.Window.Size.X, _window.Window.Size.Y);
+
+        // Headlamp pattern: pin the diffuse light to the camera eye so the
+        // lit hemisphere is always the one facing the viewer. The model
+        // rotates beneath a fixed light, which gives a clean read of the
+        // tessellation as faces sweep through the terminator.
+        _sceneState.CameraLightPosition = new Vector3(0, 0, 4f);
 
         // Some drivers don't initialize the GL viewport to match the window's
         // client area until a resize event fires. Setting it explicitly here
@@ -128,126 +146,20 @@ public sealed class TessellatorsScene : IDisposable
                     Ellipsoid.UnitSphere,
                     Math.Max(1, _subdivisionLevel),
                     CubeMapEllipsoidVertexAttributes.Position),
+            TessellatorKind.GeographicGrid =>
+                GeographicGridEllipsoidTessellator.Compute(
+                    Ellipsoid.UnitSphere,
+                    Math.Max(3, 8 + _subdivisionLevel * 4),  // slices (meridians)
+                    Math.Max(2, 4 + _subdivisionLevel * 2),  // stacks (parallels)
+                    GeographicGridEllipsoidVertexAttributes.Position),
             _ => throw new InvalidOperationException()
         };
 
         _vertexArray = context.CreateVertexArray(mesh, _shaderProgram!, BufferHint.StaticDraw);
         _drawState = new DrawState(_renderState, _shaderProgram!, _vertexArray);
-
-        DumpMeshDiagnostics(mesh);
-        DumpShaderAttributes();
-        DumpVaoLayout();
     }
 
-    /// <summary>
-    /// Queries OpenGL directly about what attribute format/binding got programmed
-    /// into the VAO. Useful for spotting stride/offset/binding mismatches.
-    /// Uses raw GLenum ints because Silk.NET's binding for these 4.5 DSA
-    /// queries exposes them differently across versions.
-    /// </summary>
-    private unsafe void DumpVaoLayout()
-    {
-        if (_vertexArray == null) return;
-        GL gl = _window.Gl;
-        uint vao = _vertexArray.Handle;
-
-        // Need the VAO bound for legacy (non-DSA) queries to work.
-        gl.BindVertexArray(vao);
-
-        // Per-attribute state. glGetVertexAttribiv reads from the bound VAO.
-        for (uint i = 0; i < 2; i++)
-        {
-            int enabled = 0, size = 0, type = 0, stride = 0, relOffset = 0, binding = 0;
-            gl.GetVertexAttrib(i, GLEnum.VertexAttribArrayEnabled, &enabled);
-            gl.GetVertexAttrib(i, GLEnum.VertexAttribArraySize, &size);
-            gl.GetVertexAttrib(i, GLEnum.VertexAttribArrayType, &type);
-            gl.GetVertexAttrib(i, GLEnum.VertexAttribArrayStride, &stride);
-            gl.GetVertexAttrib(i, GLEnum.VertexAttribRelativeOffset, &relOffset);
-            gl.GetVertexAttrib(i, GLEnum.VertexAttribBinding, &binding);
-            Console.WriteLine(
-                $"[vao] attr[{i}] enabled={enabled} size={size} type=0x{type:X4} " +
-                $"stride={stride} relOffset={relOffset} binding={binding}");
-        }
-    }
-
-    /// <summary>
-    /// Queries the compiled shader for its active attributes and prints the
-    /// location, type, and size of each. If <c>positionHigh</c> isn't at
-    /// location 0 or <c>positionLow</c> isn't at location 1, the VBO layout
-    /// (which the Mesh-to-VAO bridge sorts by location) won't match the
-    /// attribute bindings the shader expects.
-    /// </summary>
-    private unsafe void DumpShaderAttributes()
-    {
-        if (_shaderProgram == null) return;
-        GL gl = _window.Gl;
-        uint prog = _shaderProgram.Handle;
-
-        gl.GetProgram(prog, ProgramPropertyARB.ActiveAttributes, out int count);
-        gl.GetProgram(prog, ProgramPropertyARB.ActiveAttributeMaxLength, out int maxLen);
-        Console.WriteLine($"[shader] active attributes = {count}");
-        for (uint i = 0; i < (uint)count; i++)
-        {
-            gl.GetActiveAttrib(prog, i, (uint)maxLen,
-                out _, out int size, out AttributeType type, out string name);
-            int loc = gl.GetAttribLocation(prog, name);
-            Console.WriteLine($"         [{i}] name='{name}' location={loc} type={type} size={size}");
-        }
-
-        gl.GetProgram(prog, ProgramPropertyARB.ActiveUniforms, out int uniformCount);
-        Console.WriteLine($"[shader] active uniforms = {uniformCount}");
-        gl.GetProgram(prog, ProgramPropertyARB.ActiveUniformMaxLength, out int uMaxLen);
-        for (uint i = 0; i < (uint)uniformCount; i++)
-        {
-            gl.GetActiveUniform(prog, i, (uint)uMaxLen,
-                out _, out int size, out UniformType type, out string name);
-            int loc = gl.GetUniformLocation(prog, name);
-            Console.WriteLine($"         [{i}] name='{name}' location={loc} type={type} size={size}");
-        }
-    }
-
-    /// <summary>
-    /// Prints vertex count, triangle count, and the magnitude range of the
-    /// position attribute. For a tessellated unit sphere / unit ellipsoid,
-    /// every position must be on the surface, so min ≈ max ≈ 1. Any deviation
-    /// points straight at a tessellator bug (missing projection, bad index,
-    /// etc.).
-    /// </summary>
-    private static void DumpMeshDiagnostics(Mesh mesh)
-    {
-        VertexAttribute? posAttr = null;
-        foreach (VertexAttribute a in mesh.Attributes.All)
-            if (a.Name == "position") { posAttr = a; break; }
-
-        int indexCount = mesh.Indices switch
-        {
-            IndicesUnsignedInt u => u.Values.Count,
-            _ => 0
-        };
-
-        if (posAttr is VertexAttributeDoubleVector3 p)
-        {
-            double minMag = double.PositiveInfinity, maxMag = 0;
-            foreach (Vector3D v in p.Values)
-            {
-                double m = v.Magnitude;
-                if (m < minMag) minMag = m;
-                if (m > maxMag) maxMag = m;
-            }
-            Console.WriteLine(
-                $"[mesh] vertices={p.Values.Count}  triangles={indexCount / 3}  " +
-                $"|position| in [{minMag:F4}, {maxMag:F4}]");
-
-            int show = Math.Min(4, p.Values.Count);
-            for (int i = 0; i < show; i++)
-                Console.WriteLine($"       v{i} = {p.Values[i]}  |v|={p.Values[i].Magnitude:F4}");
-        }
-        else
-        {
-            Console.WriteLine($"[mesh] no 'position' EmulatedDoubleVector3 attribute found!");
-        }
-    }
-
+   
     private void OnRender(double deltaTime)
     {
         if (_rotate) _elapsed += deltaTime;
@@ -283,6 +195,12 @@ public sealed class TessellatorsScene : IDisposable
 
             case Key.Number2:
                 _kind = TessellatorKind.CubeMap;
+                BuildMesh();
+                PrintStatus();
+                break;
+
+            case Key.Number3:
+                _kind = TessellatorKind.GeographicGrid;
                 BuildMesh();
                 PrintStatus();
                 break;
@@ -331,7 +249,7 @@ public sealed class TessellatorsScene : IDisposable
             $"mode={_renderState.RasterizationMode}  " +
             $"cull={_renderState.FacetCulling.Enabled}   " +
             $"rotate={_rotate}   " +
-            "(1=Sphere 2=CubeMap  W=wire  C=cull  R=rotate  +/-=subdiv  Esc=quit)");
+            "(1=Sphere 2=CubeMap 3=GeoGrid  W=wire  C=cull  R=rotate  +/-=subdiv  Esc=quit)");
     }
 
     private void OnClose()
@@ -347,35 +265,4 @@ public sealed class TessellatorsScene : IDisposable
         _window.Dispose();
     }
 
-    // Back to the standard shader -- now that we know hardcoded MVP works,
-    // the bug is in how the auto-uniform uploads the matrix. We're going to
-    // override that upload manually in OnRender.
-    private const string VertexShaderSource = @"#version 460 core
-layout(location = 0) in vec3 positionHigh;
-layout(location = 1) in vec3 positionLow;
-
-uniform mat4 geode_modelViewPerspectiveMatrix;
-
-out vec3 vDirection;
-
-void main()
-{
-    vec3 p = positionHigh + positionLow;
-    vDirection = normalize(p);
-    gl_Position = geode_modelViewPerspectiveMatrix * vec4(p, 1.0);
-}
-";
-
-    // |direction| gives a pastel palette that highlights the underlying
-    // lattice -- useful for spotting tessellation seams and pole pinches.
-    private const string FragmentShaderSource = @"#version 460 core
-in vec3 vDirection;
-layout(location = 0) out vec4 fragmentColor;
-
-void main()
-{
-    vec3 c = 0.5 + 0.5 * vDirection;
-    fragmentColor = vec4(c, 1.0);
-}
-";
 }
